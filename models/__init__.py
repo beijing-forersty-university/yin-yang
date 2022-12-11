@@ -73,6 +73,7 @@ class EightTrigrams(nn.Module):
         #
         # outputs.append(x)
         x = self.channel(x)
+        print(x.shape)
         return x
 
         # return  self.conv1(x)

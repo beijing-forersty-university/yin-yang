@@ -23,31 +23,35 @@ class Blocks(nn.Module):
     def forward(self, x):
         return self.bo(x)
 
-
 class EightTrigrams(nn.Module):
     def __init__(self, image_size, batch_size):
         super().__init__()
-        self.qian = Blocks(image_size, batch_size, [1, 1, 1])
-        self.dui = Blocks(image_size, batch_size, [1, 1, 0])
-        self.li = Blocks(image_size, batch_size, [1, 0, 1])
-        self.zhen = Blocks(image_size, batch_size, [1, 0, 0])
-        self.xun = Blocks(image_size, batch_size, [0, 1, 1])
-        self.kan = Blocks(image_size, batch_size, [0, 1, 0])
+        # self.qian = Blocks(image_size, batch_size, [1, 1, 1])
+        # self.dui = Blocks(image_size, batch_size, [1, 1, 0])
+        # self.li = Blocks(image_size, batch_size, [1, 0, 1])
+        # self.zhen = Blocks(image_size, batch_size, [1, 0, 0])
+        # self.xun = Blocks(image_size, batch_size, [0, 1, 1])
+        # self.kan = Blocks(image_size, batch_size, [0, 1, 0])
         self.gen = Blocks(image_size, batch_size, [0, 0, 1])
-        self.kun = Blocks(image_size, batch_size, [0, 0, 0])
+        # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
 
     def forward(self, x):
-        x = self.qian(x)
-        x = self.dui(x)
-        x = self.li(x)
-        x = self.zhen(x)
-        x = self.xun(x)
-        x = self.kan(x)
+        # x = self.qian(x)
         x = self.gen(x)
-        x = self.kun(x)
-
+        # outputs = []
+        # # x = self.li(x)
+        # # x = self.zhen(x)
+        # # x = self.xun(x)
+        # # x = self.kan(x)
+        # # x = self.gen(x)
+        # # x = self.kun(x)
+        #
+        # x = self.pool(x)
+        #
+        # outputs.append(x)
         return x
 
+        # return  self.conv1(x)
 
 def EightTrigrams_(cfg):
 
@@ -60,7 +64,18 @@ def EightTrigrams_(cfg):
     else:
         raise NotImplementedError(name)
 
+import torchviz
+from graphviz import Source
 
-# x = torch.randn(4, 3, 128, 128).to(device)
-# model = EightTrigrams(128, 4).to(device)
-# print(model(x))
+x = torch.randn(32, 3, 640, 640).to("cuda")
+model = EightTrigrams(640, 32).to("cuda")
+
+# dot = torchviz.make_dot(model(x))
+
+x =  model(x)
+# 将可视化图输出为图像文件
+# dot.render("new.pdf")
+# print("start")
+# for o in x:
+#     print(o.shape)
+

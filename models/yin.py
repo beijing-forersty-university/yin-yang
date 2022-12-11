@@ -193,17 +193,17 @@ class UNet(nn.Module):
         self.n_channels = n_channels
         self.bilinear = bilinear
 
-        self.inc = (DoubleConv(n_channels, 256))
+        self.inc = (DoubleConv(n_channels, 16))
         # self.down1 = (Down(256, 512))
         # self.down2 = (Down(256, 512))
         # self.down3 = (Down(512, 1024))
         factor = 2 if bilinear else 1
-        self.down4 = (Down(256, 512 // factor))
+        self.down4 = (Down(16, 32 // factor))
         # self.up1 = (Up(1024, 512 // factor, bilinear))
         # self.up2 = (Up(512, 256 // factor, bilinear))
         # self.up3 = (Up(512, 256 // factor, bilinear))
-        self.up4 = (Up(512, 256, bilinear))
-        self.outc = (OutConv(256, n_channels))
+        self.up4 = (Up(32, 16, bilinear))
+        self.outc = (OutConv(16, n_channels))
 
     def forward(self, x):
         x1 = self.inc(x)
@@ -219,4 +219,10 @@ class UNet(nn.Module):
         logits = self.outc(x)
         return logits
 
+if __name__ == "__main__":
+    input = torch.randn(4, 3, 224, 224)
+    model =UNet(n_channels=3)
+    x = model(input)
 
+
+    print(x.shape)

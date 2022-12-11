@@ -233,7 +233,7 @@ class Bo(nn.Module):
     def forward(self, x):
         x = self.resizer(x)
         x = self.attention(x)
-        x = self.transformer(x)
+        # x = self.transformer(x)
         return x
 
 

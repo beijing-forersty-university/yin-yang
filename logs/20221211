@@ -25,3 +25,6 @@
 2022-12-11 10:48:55,423 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
 2022-12-11 10:48:55,426 - pytorch - INFO - Use gpu ids: [0]
 2022-12-11 10:48:55,437 - pytorch - INFO - Begin to training ...
+2022-12-11 15:05:31,016 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 15:05:31,019 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 15:05:31,030 - pytorch - INFO - Begin to training ...

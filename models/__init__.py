@@ -35,20 +35,16 @@ class EightTrigrams(nn.Module):
         self.kun = Blocks(image_size, batch_size, [0, 0, 0])
 
     def forward(self, x):
-        x1 = self.qian(x)
-        x2 = self.dui(x)
-        x3 = self.li(x)
-        x4 = self.zhen(x)
-        x5 = self.xun(x)
-        x6 = self.kan(x)
-        x7 = self.gen(x)
-        x8 = self.kun(x)
-        x18 = torch.sub(x1 - x8)
-        x27 = torch.sub(x2 - x7)
-        x36 = torch.sub(x3 - x6)
-        x45 = torch.sub(x4 - x5)
+        x = self.qian(x)
+        x = self.dui(x)
+        x = self.li(x)
+        x = self.zhen(x)
+        x = self.xun(x)
+        x = self.kan(x)
+        x = self.gen(x)
+        x = self.kun(x)
 
-        return torch.add(x18, x27, x36, x45)
+        return x
 
 # x = torch.randn(4, 3, 128, 128).to(device)
 # model = EightTrigrams(128, 4).to(device)

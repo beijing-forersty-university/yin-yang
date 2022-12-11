@@ -406,8 +406,8 @@ class Yolov7Loss:
             # Append
             a = t[:, 6].long()  # anchor indices
 
-            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid indices
+            indices.append(
+                (b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid indices
             anch.append(anchors[a])  # anchors
-
 
         return indices, anch

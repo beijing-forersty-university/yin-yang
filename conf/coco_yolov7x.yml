@@ -61,7 +61,7 @@ DATASET:
 # Model / Evaluator Configurations
 #########################################
 USE_MODEL:
-  CLASS: 'models.yin-yang.YOLOv7x'
+  CLASS: 'models.yin-yang.YOLOv7'
   TYPE: 'yolov7x_l'
   BACKBONE: { 'name': 'YOLOv7Backbone', 'out_stages': [3, 4, 5], 'output_stride': 32, 'pretrained': False }
   NECK: { 'name': 'YOLOv7Neck', 'in_channels': [512, 1024, 1024], 'out_channels': [128, 256, 512] }

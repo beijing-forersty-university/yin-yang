@@ -75,7 +75,7 @@ class EightTrigrams(nn.Module):
         # self.kan = Blocks(image_size, batch_size, [0, 1, 0])
         self.gen = Blocks(image_size, batch_size, [0, 0, 1])
         # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
-        self.channel = ChannelWisePooling()
+        # self.channel = ChannelWisePooling()
         self.neck1 = Neck(3, 512)
         self.neck2 = Neck(3, 1024)
         self.neck3 = Neck(3, 1024)
@@ -91,7 +91,7 @@ class EightTrigrams(nn.Module):
         # # x = self.gen(x)
         # # x = self.kun(x)
 
-        x = self.channel(x)
+        # x = self.channel(x)
         x1 = self.neck1(x)
         print(x1.shape)
         x2 = self.neck2(x)

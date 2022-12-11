@@ -3,13 +3,7 @@ from models.yin import UNet
 import torch
 from torch import nn
 
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-    print('GPU: ', torch.cuda.get_device_name(0))
 
-else:
-    device = torch.device("cpu")
-    print('No GPU available')
 
 
 class Blocks(nn.Module):

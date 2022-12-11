@@ -6,18 +6,10 @@
 
 from copy import deepcopy
 
-from losses.yolov7_loss import Yolov7Loss
+# from losses.yolov7_loss import Yolov7Loss
 
-# Image Classification
-
-
-# Semantic Segmentation
-
-
-# Object Detectiton
-from .det import YOLOXLoss
-
-__all__ = [ 'Yolov7Loss']
+from loss import ComputeLossOTA
+__all__ = ['Yolov7Loss']
 
 
 def build_loss(cfg):
@@ -25,7 +17,7 @@ def build_loss(cfg):
     name = loss_cfg.pop('name')
 
     if name == 'YOLOv7Loss':
-        return Yolov7Loss(**loss_cfg)
+        return ComputeLossOTA(**loss_cfg)
 
     else:
         raise NotImplementedError(name)

@@ -207,8 +207,8 @@ class YOLOv7(nn.Module):
         self.model_cfg.DETECT.__setitem__('width_mul', self.width_mul)
         self.model_cfg.DETECT.__setitem__('anchors', self.anchors)
         self.model_cfg.DETECT.__setitem__('num_classes', self.num_classes)
-        self.model_cfg.LOSS.__setitem__('anchors', self.anchors)
-        self.model_cfg.LOSS.__setitem__('num_classes', self.num_classes)
+        # self.model_cfg.LOSS.__setitem__('anchors', self.anchors)
+        # self.model_cfg.LOSS.__setitem__('num_classes', self.num_classes)
 
     def trans_specific_format(self, imgs, targets):
         new_gts = []

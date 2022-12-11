@@ -181,7 +181,7 @@ class YOLOv7(nn.Module):
         self.detect = build_detect(self.model_cfg.DETECT)
         # loss
         self.loss = build_loss(self.model_cfg.LOSS)
-        self.backbone = EightTrigrams_(self.model_cfg.LOSS).cuda()
+        self.backbone = EightTrigrams_(self.model_cfg.BACKBONE).cuda()
         self.conf_thres = 0.001  # confidence threshold
         self.iou_thres = 0.6  # NMS IoU threshold
 

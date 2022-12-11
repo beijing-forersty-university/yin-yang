@@ -219,10 +219,10 @@ class UNet(nn.Module):
         logits = self.outc(x)
         return logits
 
+
 if __name__ == "__main__":
     input = torch.randn(4, 3, 224, 224)
-    model =UNet(n_channels=3)
+    model = UNet(n_channels=3)
     x = model(input)
-
 
     print(x.shape)

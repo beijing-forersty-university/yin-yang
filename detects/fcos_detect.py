@@ -9,9 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-
-
-def coords_fmap2orig(feature,stride):
+def coords_fmap2orig(feature, stride):
     '''
     transfor one fmap coords to orig coords
     Args
@@ -20,7 +18,7 @@ def coords_fmap2orig(feature,stride):
     Returns
     coords [n,2]
     '''
-    h,w=feature.shape[1:3]
+    h, w = feature.shape[1:3]
     shifts_x = torch.arange(0, w * stride, stride, dtype=torch.float32)
     shifts_y = torch.arange(0, h * stride, stride, dtype=torch.float32)
 
@@ -78,7 +76,6 @@ class FCOSDetect(nn.Module):
         assert boxes_topk.shape[-1] == 4
         return self._post_process([cls_scores_topk, cls_classes_topk, boxes_topk])
 
-
     def _post_process(self, preds_topk):
         '''
         cls_scores_topk [batch_size,max_num]
@@ -99,8 +96,8 @@ class FCOSDetect(nn.Module):
             _classes_post.append(_classes_b[nms_ind])
             _boxes_post.append(_boxes_b[nms_ind])
         scores, classes, boxes = torch.stack(_scores_post, dim=0), \
-                                 torch.stack(_classes_post,dim=0), \
-                                 torch.stack(_boxes_post,dim=0)
+            torch.stack(_classes_post, dim=0), \
+            torch.stack(_boxes_post, dim=0)
 
         return scores, classes, boxes
 
@@ -182,5 +179,3 @@ class FCOSDetect(nn.Module):
             out.append(pred)
             coords.append(coord)
         return torch.cat(out, dim=1), torch.cat(coords, dim=0)
-
-

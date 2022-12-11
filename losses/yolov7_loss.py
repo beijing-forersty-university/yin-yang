@@ -340,7 +340,7 @@ class Yolov7Loss:
 
             for i in range(nl):
                 layer_idx = from_which_layer == i
-                # matching_bs[i].append(all_b[layer_idx])
+                matching_bs[i].append(all_b[layer_idx])
                 matching_as[i].append(all_a[layer_idx])
                 matching_gjs[i].append(all_gj[layer_idx])
                 matching_gis[i].append(all_gi[layer_idx])
@@ -348,15 +348,14 @@ class Yolov7Loss:
                 matching_anchs[i].append(all_anch[layer_idx])
 
         for i in range(nl):
-            # matching_bs[i] = torch.cat(matching_bs[i], dim=0)
+            matching_bs[i] = torch.cat(matching_bs[i], dim=0)
             matching_as[i] = torch.cat(matching_as[i], dim=0)
             matching_gjs[i] = torch.cat(matching_gjs[i], dim=0)
             matching_gis[i] = torch.cat(matching_gis[i], dim=0)
             matching_targets[i] = torch.cat(matching_targets[i], dim=0)
             matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
 
-        # return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs
-        return 1, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs
+        return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs
 
     def find_3_positive(self, p, targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)

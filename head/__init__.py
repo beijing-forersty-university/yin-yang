@@ -94,4 +94,8 @@ from copy import deepcopy
 
 def YOLOXHead_(cfg):
     head_cfg = deepcopy(cfg)
-    return YOLOXHead(**head_cfg)
+    name = head_cfg.pop('name')
+    if name == 'YOLOv5Head':
+        return YOLOXHead(**head_cfg)
+    else:
+        raise NotImplementedError(name)

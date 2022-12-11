@@ -358,7 +358,7 @@ class Yolov7Loss:
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs
 
     def find_3_positive(self, p, targets):
-        print(targets)
+
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
         na, nt = self.num_anchors, targets.shape[0]  # number of anchors, targets
         indices, anch = [], []
@@ -407,8 +407,8 @@ class Yolov7Loss:
             # Append
             a = t[:, 6].long()  # anchor indices
 
-            indices.append((b, a, gj.clamp_(0, int(gain[3]) - 1), gi.clamp_(0, int(gain[2]) - 1)))  # image, anchor, grid indices
+            indices.append(
+                (b, a, gj.clamp_(0, int(gain[3]) - 1), gi.clamp_(0, int(gain[2]) - 1)))  # image, anchor, grid indices
             anch.append(anchors[a])  # anchors
-
-
+        print(indices)
         return indices, anch

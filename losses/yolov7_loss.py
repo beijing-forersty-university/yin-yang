@@ -372,7 +372,7 @@ class Yolov7Loss:
                             ], device=targets.device).float() * g  # offsets
 
         for i in range(self.num_layers):
-            anchors = self.anchors[i]
+            anchors, shape = self.anchors[i], p[i].shape
             gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
 
             # Match targets to anchors
@@ -405,8 +405,9 @@ class Yolov7Loss:
 
             # Append
             a = t[:, 6].long()  # anchor indices
-            print((b, a, gj.clamp_(0, gain[3] - 1), gi.clamp_(0, gain[2] - 1)))
-            indices.append((b, a, gj.clamp_(0, gain[3] - 1), gi.clamp_(0, gain[2] - 1)))  # image, anchor, grid indices
+
+            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid indices
             anch.append(anchors[a])  # anchors
+
 
         return indices, anch

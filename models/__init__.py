@@ -100,7 +100,7 @@ class EightTrigrams(nn.Module):
         outputs.append(x2)
         outputs.append(x3)
 
-        return x
+        return outputs
 
         # return  self.conv1(x)
 

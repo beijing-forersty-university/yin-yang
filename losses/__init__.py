@@ -8,8 +8,9 @@ from copy import deepcopy
 
 # from losses.yolov7_loss import Yolov7Loss
 
-from loss import ComputeLossOTA
-__all__ = ['Yolov7Loss']
+from losses.loss import ComputeLossOTA
+
+__all__ = ['ComputeLossOTA']
 
 
 def build_loss(cfg):

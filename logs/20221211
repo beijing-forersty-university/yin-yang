@@ -1,0 +1,27 @@
+2022-12-11 10:26:25,102 - pytorch - INFO - Using torch 1.9.0+cu111
+2022-12-11 10:35:19,301 - pytorch - INFO - Using torch 1.9.0+cu111
+2022-12-11 10:38:38,078 - pytorch - INFO - Using torch 1.9.0+cu111
+2022-12-11 10:39:11,867 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:39:11,869 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:39:11,884 - pytorch - INFO - Begin to training ...
+2022-12-11 10:40:39,667 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:40:39,669 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:40:39,679 - pytorch - INFO - Begin to training ...
+2022-12-11 10:43:39,627 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:43:39,631 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:43:39,644 - pytorch - INFO - Begin to training ...
+2022-12-11 10:44:43,312 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:44:43,314 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:44:43,325 - pytorch - INFO - Begin to training ...
+2022-12-11 10:45:42,512 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:45:42,515 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:45:42,525 - pytorch - INFO - Begin to training ...
+2022-12-11 10:46:37,753 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:46:37,756 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:46:37,767 - pytorch - INFO - Begin to training ...
+2022-12-11 10:47:06,124 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:47:06,126 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:47:06,139 - pytorch - INFO - Begin to training ...
+2022-12-11 10:48:55,423 - pytorch - INFO - Loaded configuration file: conf/coco_yolov7x.yml
+2022-12-11 10:48:55,426 - pytorch - INFO - Use gpu ids: [0]
+2022-12-11 10:48:55,437 - pytorch - INFO - Begin to training ...

@@ -26,7 +26,6 @@ class YOLOXHead(nn.Module):
         self.obj_preds = nn.ModuleList()
 
         for i in range(len(in_channels)):
-            print(i)
             self.stems.append(
                 ConvModule(in_channels=in_channels[i], out_channels=in_places, kernel_size=1, stride=1, padding=1,
                            activation="SiLU")

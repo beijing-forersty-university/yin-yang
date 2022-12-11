@@ -179,7 +179,7 @@ class Trainer:
             # Autocast
             with amp.autocast(enabled=cfg.AMP):
                 imgs = imgs.to(device)
-                print(type(targets))
+                print(targets)
                 out = model(imgs, targets, prefix).to(device)
                 if not isinstance(out, tuple):
                     losses, predicts = out, None

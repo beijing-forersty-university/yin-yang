@@ -14,8 +14,8 @@ DATASET:
     IMG_SUFFIX: '*.jpg'
     INDICES: ''
     SHUFFLE: True
-    BATCH_SIZE: 8
-    NUM_WORKER: 8
+    BATCH_SIZE: 32
+    NUM_WORKER: 1
     LOAD_NUM: 4
     CACHE: True
     LABELS:
@@ -40,7 +40,7 @@ DATASET:
     INDICES: ''
     SHUFFLE: False
     BATCH_SIZE: 8
-    NUM_WORKER: 8
+    NUM_WORKER: 1
     LOAD_NUM: 1
     CACHE: True
     LABELS:

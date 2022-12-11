@@ -178,7 +178,6 @@ class Trainer:
         if prefix == 'train':
             # Autocast
             with amp.autocast(enabled=cfg.AMP):
-                imgs = imgs.to(device)
                 print(imgs)
                 out = model(imgs, targets, prefix).to(device)
                 if not isinstance(out, tuple):

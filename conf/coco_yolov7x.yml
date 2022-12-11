@@ -39,7 +39,7 @@ DATASET:
     IMG_SUFFIX: '*.jpg'
     INDICES: ''
     SHUFFLE: False
-    BATCH_SIZE: 4
+    BATCH_SIZE: 1
     NUM_WORKER: 0
     LOAD_NUM: 1
     CACHE: True
@@ -63,11 +63,11 @@ DATASET:
 USE_MODEL:
   CLASS: 'models.yin-yang.YOLOv7'
   TYPE: 'yolov7x_l'
-  BACKBONE: { 'name': 'YOLOv7Backbone', 'out_stages': [3, 4, 5], 'output_stride': 32, 'pretrained': False }
-  NECK: { 'name': 'YOLOv7Neck', 'in_channels': [512, 1024, 1024], 'out_channels': [128, 256, 512] }
+  BACKBONE: { 'name': 'YIN-YANG', 'batch_size': 4, 'image_size': 640 }
   HEAD: { 'name': 'YOLOv7Head', 'num_classes': 1, 'in_channels': [128, 256, 512]}
   DETECT: { 'name': 'YOLOv7Detect', 'in_channels': [256, 512, 1024] }
   LOSS: { 'name': 'YOLOv7Loss' }
+
 
 
 

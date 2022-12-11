@@ -9,7 +9,7 @@ from detects import build_detect
 from losses import build_loss
 
 from head import  YOLOXHead_
-from models import EightTrigrams
+from models import EightTrigrams, EightTrigrams_
 
 """
     YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors
@@ -181,7 +181,7 @@ class YOLOv7(nn.Module):
         self.detect = build_detect(self.model_cfg.DETECT)
         # loss
         self.loss = build_loss(self.model_cfg.LOSS)
-
+        self.backbone = EightTrigrams_(self.model_cfg.LOSS).cuda()
         self.conf_thres = 0.001  # confidence threshold
         self.iou_thres = 0.6  # NMS IoU threshold
 
@@ -248,9 +248,9 @@ class YOLOv7(nn.Module):
             imgs, targets = self.trans_specific_format(imgs, targets)
             b, _, height, width = imgs.shape
             # imgs N x 3 x 640 x 640
-            yin_yang = EightTrigrams(height, b).cuda()
+
             losses = {}
-            out, train_out = self.detect(self.head(yin_yang(imgs)))
+            out, train_out = self.detect(self.head(self.backbone(imgs)))
             # print(out, train_out)
             if train_out is not None:
                 losses['loss'], loss_states = self.loss(train_out, targets["gts"], imgs)

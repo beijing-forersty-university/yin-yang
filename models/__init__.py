@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from models.yang import *
 from models.yin import UNet
 import torch
@@ -45,6 +47,19 @@ class EightTrigrams(nn.Module):
         x = self.kun(x)
 
         return x
+
+
+def EightTrigrams_(cfg):
+
+    loss_cfg = deepcopy(cfg)
+    name = loss_cfg.pop('name')
+
+    if name == 'YIN-YANG':
+        return EightTrigrams(**loss_cfg)
+
+    else:
+        raise NotImplementedError(name)
+
 
 # x = torch.randn(4, 3, 128, 128).to(device)
 # model = EightTrigrams(128, 4).to(device)

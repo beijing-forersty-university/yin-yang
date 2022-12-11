@@ -171,7 +171,8 @@ class Trainer:
         if prefix == 'train':
             # Autocast
             with amp.autocast(enabled=cfg.AMP):
-                out = model(imgs, targets, prefix).cuda()
+                imgs = imgs.cuda()
+                out = model(imgs, targets, prefix)
                 if not isinstance(out, tuple):
                     losses, predicts = out, None
                 else:

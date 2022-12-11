@@ -248,7 +248,7 @@ class YOLOv7(nn.Module):
             imgs, targets = self.trans_specific_format(imgs, targets)
             b, _, height, width = imgs.shape
             # imgs N x 3 x 640 x 640
-            yin_yang = EightTrigrams(height, b)
+            yin_yang = EightTrigrams(height, b).cuda()
             losses = {}
             out, train_out = self.detect(self.head(yin_yang(imgs)))
             # print(out, train_out)

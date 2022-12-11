@@ -4,8 +4,6 @@ import torch
 from torch import nn
 
 
-
-
 class Blocks(nn.Module):
     def __init__(self, image_size, batch_size, trigram):
         super().__init__()
@@ -37,7 +35,6 @@ class EightTrigrams(nn.Module):
         self.kun = Blocks(image_size, batch_size, [0, 0, 0])
 
     def forward(self, x):
-        # x1 = self.kun(x)
         x1 = self.qian(x)
         x2 = self.dui(x)
         x3 = self.li(x)
@@ -47,7 +44,6 @@ class EightTrigrams(nn.Module):
         x7 = self.gen(x)
         x8 = self.kun(x)
         return torch.add(x1, x2, x3, x4, x5, x6, x7, x8)
-
 
 # x = torch.randn(4, 3, 128, 128).to(device)
 # model = EightTrigrams(128, 4).to(device)

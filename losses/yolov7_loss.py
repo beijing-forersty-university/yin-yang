@@ -1,13 +1,8 @@
-# !/usr/bin/env python
-# -- coding: utf-8 --
-# @Time : 2022/7/10 11:10
-# @Author : liumin
-# @File : yolov7_loss.py
-
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 
 def xywh2xyxy(x):

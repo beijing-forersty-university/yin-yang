@@ -237,13 +237,13 @@ class Bo(nn.Module):
         return x
 
 
-if __name__ == "__main__":
-    input = torch.randn(4, 3, 224, 224)
-    model = Resizer(3, 224)
-    model1 = EfficientAttention(3, 1, 1, 64)
-    model2 = TransformerBlock(3, 3, 1, 1)
-    x = model(input)
-    x = model1(x)
-    x = model2(x)
-
-    print(x.shape)
+# if __name__ == "__main__":
+#     input = torch.randn(4, 3, 224, 224)
+#     model = Resizer(3, 224)
+#     model1 = EfficientAttention(3, 1, 1, 64)
+#     model2 = TransformerBlock(3, 3, 1, 1)
+#     x = model(input)
+#     x = model1(x)
+#     x = model2(x)
+#
+#     print(x.shape)

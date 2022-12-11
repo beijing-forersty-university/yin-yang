@@ -55,6 +55,6 @@ class EightTrigrams(nn.Module):
         return x1, x2, x3, x4, x5, x6, x7, x8
 
 
-x = torch.randn(4, 3, 128, 128).to(device)
-model = EightTrigrams(128, 4).to(device)
-print(model(x))
+# x = torch.randn(4, 3, 128, 128).to(device)
+# model = EightTrigrams(128, 4).to(device)
+# print(model(x))

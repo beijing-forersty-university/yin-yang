@@ -6,7 +6,7 @@ from utils.global_logger import logger
 
 parser = argparse.ArgumentParser(description='Generic Pytorch-based Training Framework')
 # parser.add_argument('--training-setting', required=True, help='The path to the training setting file you want to use.')
-parser.add_argument('--setting', default='conf/flower.yml',
+parser.add_argument('--setting', default='conf/coco_yolov7x.yml',
                     help='The path to the training setting file you want to use.')
 
 

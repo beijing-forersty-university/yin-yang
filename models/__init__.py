@@ -46,11 +46,11 @@ class ChannelWisePooling(torch.nn.Module):
 
 
 class Neck(torch.nn.Module):
-    def __init__(self, num_channels):
+    def __init__(self, num_channels, out_channel):
         super(Neck, self).__init__()
-        self.conv1 = nn.Conv2d(num_channels, 32, kernel_size=3, stride=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=2)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2)
+        self.conv1 = nn.Conv2d(num_channels, out_channel / 4, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv2d(out_channel / 4, out_channel / 2, kernel_size=3, stride=2)
+        self.conv3 = nn.Conv2d(out_channel / 2, out_channel, kernel_size=3, stride=2)
         self.gap = nn.AdaptiveAvgPool2d(output_size=(1, 1))
 
     def forward(self, x):
@@ -73,9 +73,9 @@ class EightTrigrams(nn.Module):
         self.gen = Blocks(image_size, batch_size, [0, 0, 1])
         # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
         self.channel = ChannelWisePooling()
-        self.neck1 = Neck(3)
-        self.neck2 = Neck(3)
-        self.neck3 = Neck(3)
+        self.neck1 = Neck(3, 512)
+        self.neck2 = Neck(3, 1024)
+        self.neck3 = Neck(3, 1024)
 
     def forward(self, x):
         # x = self.qian(x)

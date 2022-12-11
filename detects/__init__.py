@@ -8,7 +8,6 @@ from copy import deepcopy
 from detects.fcos_detect import FCOSDetect
 from detects.objectbox_detect import ObjectBoxDetect
 from detects.yolov5_detect import YOLOv5Detect
-from detects.yolov6_detect import YOLOv6Detect
 from detects.yolov7_detect import YOLOv7Detect
 
 __all__ = [

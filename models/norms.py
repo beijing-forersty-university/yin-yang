@@ -48,6 +48,5 @@ def norm_layer(cfg, num_features, postfix=''):
 
     for param in layer.parameters():
         param.requires_grad = requires_grad
-    print("start", name)
 
-    return name,
+    return name, layer

@@ -86,7 +86,7 @@ class YOLOXHead(nn.Module):
             output = torch.cat([reg_output, obj_output, cls_output], 1)
             outputs.append(output)
 
-        return
+        return outputs
 
 
 from copy import deepcopy

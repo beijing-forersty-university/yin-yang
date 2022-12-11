@@ -65,7 +65,7 @@ USE_MODEL:
   TYPE: 'yolov7x_l'
   BACKBONE: { 'name': 'YOLOv7Backbone', 'out_stages': [3, 4, 5], 'output_stride': 32, 'pretrained': False }
   NECK: { 'name': 'YOLOv7Neck', 'in_channels': [512, 1024, 1024], 'out_channels': [128, 256, 512] }
-  HEAD: { 'name': 'YOLOv7Head', 'in_channels': [128, 256, 512], 'out_channels': [256, 512, 1024] }
+  HEAD: { 'name': 'YOLOv7Head', 'num_classes': 1, 'in_channels': [128, 256, 512]}
   DETECT: { 'name': 'YOLOv7Detect', 'in_channels': [256, 512, 1024] }
   LOSS: { 'name': 'YOLOv7Loss' }
 

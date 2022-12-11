@@ -199,8 +199,8 @@ class YOLOv7(nn.Module):
                 m.inplace = True
 
     def setup_extra_params(self):
-        self.model_cfg.BACKBONE.__setitem__('depth_mul', self.depth_mul)
-        self.model_cfg.BACKBONE.__setitem__('width_mul', self.width_mul)
+        # self.model_cfg.BACKBONE.__setitem__('depth_mul', self.depth_mul)
+        # self.model_cfg.BACKBONE.__setitem__('width_mul', self.width_mul)
         self.model_cfg.HEAD.__setitem__('depth_mul', self.depth_mul)
         self.model_cfg.HEAD.__setitem__('width_mul', self.width_mul)
         self.model_cfg.DETECT.__setitem__('depth_mul', self.depth_mul)

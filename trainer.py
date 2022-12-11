@@ -147,13 +147,6 @@ class Trainer:
             :param prefix: train or val or infer
             :return: losses, predicts
         '''
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-            print('GPU: ', torch.cuda.get_device_name(0))
-
-        else:
-            device = torch.device("cpu")
-            print('No GPU available')
         imgs, targets = sample['image'], sample['target']
         imgs = list(img.cuda() for img in imgs) if isinstance(imgs, list) else imgs.cuda()
         if isinstance(targets, list):
@@ -178,7 +171,7 @@ class Trainer:
         if prefix == 'train':
             # Autocast
             with amp.autocast(enabled=cfg.AMP):
-                out = model(imgs, targets, prefix).to(device)
+                out = model(imgs, targets, prefix)
                 if not isinstance(out, tuple):
                     losses, predicts = out, None
                 else:
@@ -286,7 +279,6 @@ class Trainer:
 
         ## parser_model
         model_ft = self._parser_model()
-        model_ft= model_ft.cuda()
         print(model_ft)
 
         # EMA

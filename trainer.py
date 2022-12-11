@@ -178,7 +178,6 @@ class Trainer:
         if prefix == 'train':
             # Autocast
             with amp.autocast(enabled=cfg.AMP):
-                print(imgs)
                 out = model(imgs, targets, prefix).to(device)
                 if not isinstance(out, tuple):
                     losses, predicts = out, None
@@ -287,6 +286,7 @@ class Trainer:
 
         ## parser_model
         model_ft = self._parser_model()
+        model_ft= model_ft.cuda()
         print(model_ft)
 
         # EMA

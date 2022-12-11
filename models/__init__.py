@@ -43,7 +43,12 @@ class EightTrigrams(nn.Module):
         x6 = self.kan(x)
         x7 = self.gen(x)
         x8 = self.kun(x)
-        return torch.add(x1, x2, x3, x4, x5, x6, x7, x8)
+        x18 = torch.sub(x1 - x8)
+        x27 = torch.sub(x2 - x7)
+        x36 = torch.sub(x3 - x6)
+        x45 = torch.sub(x4 - x5)
+
+        return torch.add(x18, x27, x36, x45)
 
 # x = torch.randn(4, 3, 128, 128).to(device)
 # model = EightTrigrams(128, 4).to(device)

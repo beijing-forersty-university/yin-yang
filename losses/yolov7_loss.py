@@ -403,11 +403,15 @@ class Yolov7Loss:
             gij = (gxy - offsets).long()
             gi, gj = gij.T  # grid xy indices
 
-            # Append
-            a = t[:, 6].long()  # anchor indices
+            # # Append
+            # a = t[:, 6].long()  # anchor indices
+            #
+            # indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid indices
+            # anch.append(anchors[a])  # anchors
 
+            a = t[:, 6].long()  # anchor indices
             indices.append(
-                (b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid indices
-            anch.append(anchors[a])  # anchors
+                (b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid  # 修改成这样
+            anch.append(torch.cat((gxy - gij, gwh), 1))  # box
 
         return indices, anch

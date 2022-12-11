@@ -405,6 +405,7 @@ class Yolov7Loss:
 
             # Append
             a = t[:, 6].long()  # anchor indices
+            print((b, a, gj.clamp_(0, gain[3] - 1), gi.clamp_(0, gain[2] - 1)))
             indices.append((b, a, gj.clamp_(0, gain[3] - 1), gi.clamp_(0, gain[2] - 1)))  # image, anchor, grid indices
             anch.append(anchors[a])  # anchors
 

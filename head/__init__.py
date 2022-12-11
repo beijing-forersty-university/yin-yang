@@ -46,7 +46,8 @@ class YOLOXHead(nn.Module):
                                  activation="SiLU"), ]
                 )
             )
-            self.cls_preds.append(nn.Conv2d(in_places, self.n_anchors * self.num_classes, 1, 1, 0))
+            tmp = self.n_anchors * self.num_classes
+            self.cls_preds.append(nn.Conv2d(in_places, tmp, 1, 1, 0))
             self.reg_preds.append(nn.Conv2d(in_places, 4, 1, 1, 0))
             self.obj_preds.append(nn.Conv2d(in_places, self.n_anchors * 1, 1, 1, 0))
 

@@ -90,7 +90,7 @@ class EightTrigrams(nn.Module):
 
         x = self.channel(x)
         x1 = self.neck1(x)
-        print(x1)
+        print(x1.shape)
         x2 = self.neck2(x)
         x3 = self.neck3(x)
         outputs.append(x1)

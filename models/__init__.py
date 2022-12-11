@@ -64,8 +64,8 @@ def EightTrigrams_(cfg):
     else:
         raise NotImplementedError(name)
 
-import torchviz
-from graphviz import Source
+# import torchviz
+# from graphviz import Source
 
 x = torch.randn(32, 3, 640, 640).to("cuda")
 model = EightTrigrams(640, 32).to("cuda")

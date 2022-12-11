@@ -46,7 +46,7 @@ class YOLOXHead(nn.Module):
                                  activation="SiLU"), ]
                 )
             )
-            print(self.n_anchors,self.num_classes)
+            print(self.n_anchors, self.num_classes)
             tmp = int(self.n_anchors) * int(self.num_classes)
             self.cls_preds.append(nn.Conv2d(in_places, tmp, 1, 1, 0))
             self.reg_preds.append(nn.Conv2d(in_places, 4, 1, 1, 0))
@@ -87,3 +87,11 @@ class YOLOXHead(nn.Module):
             outputs.append(output)
 
         return
+
+
+from copy import deepcopy
+
+
+def YOLOXHead_(cfg):
+    head_cfg = deepcopy(cfg)
+    return YOLOXHead(**head_cfg)

@@ -8,7 +8,7 @@ import torchvision
 from detects import build_detect
 from losses import build_loss
 
-from head import YOLOXHead
+from head import  YOLOXHead_
 from models import EightTrigrams
 
 """
@@ -176,7 +176,7 @@ class YOLOv7(nn.Module):
         # # neck
         # self.neck = build_neck(self.model_cfg.NECK)
         # head
-        self.head = YOLOXHead(self.model_cfg.HEAD)
+        self.head = YOLOXHead_(self.model_cfg.HEAD)
         # detect
         self.detect = build_detect(self.model_cfg.DETECT)
         # loss

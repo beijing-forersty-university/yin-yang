@@ -77,8 +77,8 @@ class EightTrigrams(nn.Module):
         # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
         self.channel = ChannelWisePooling()
         self.neck1 = Neck(3, 128)
-        self.neck2 = Neck(3, 512)
-        self.neck3 = Neck(3, 1024)
+        self.neck2 = Neck(3, 256)
+        self.neck3 = Neck(3, 512)
 
     def forward(self, x):
         # x = self.qian(x)

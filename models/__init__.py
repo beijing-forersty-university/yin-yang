@@ -23,6 +23,28 @@ class Blocks(nn.Module):
     def forward(self, x):
         return self.bo(x)
 
+
+class ChannelWisePooling(torch.nn.Module):
+    def __init__(self, pool_type='avg'):
+        super(ChannelWisePooling, self).__init__()
+        self.pool_type = pool_type
+
+    def forward(self, x):
+        # Get the number of channels in the input tensor
+        num_channels = x.shape[1]
+        if self.pool_type == 'avg':
+            # Apply average pooling to each channel independently
+            channels = [F.avg_pool2d(x[:, i, :, :].unsqueeze(1), kernel_size=2) for i in range(num_channels)]
+        elif self.pool_type == 'max':
+            # Apply max pooling to each channel independently
+            channels = [F.max_pool2d(x[:, i, :, :].unsqueeze(1), kernel_size=2) for i in range(num_channels)]
+        else:
+            raise ValueError("Invalid pooling type: {}".format(self.pool_type))
+
+        # Concatenate the pooled channels back together into a single tensor
+        return torch.cat(channels, dim=1)
+
+
 class EightTrigrams(nn.Module):
     def __init__(self, image_size, batch_size):
         super().__init__()
@@ -34,6 +56,7 @@ class EightTrigrams(nn.Module):
         # self.kan = Blocks(image_size, batch_size, [0, 1, 0])
         self.gen = Blocks(image_size, batch_size, [0, 0, 1])
         # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
+        self.channel = ChannelWisePooling()
 
     def forward(self, x):
         # x = self.qian(x)
@@ -49,12 +72,13 @@ class EightTrigrams(nn.Module):
         # x = self.pool(x)
         #
         # outputs.append(x)
+        x = self.channel(x)
         return x
 
         # return  self.conv1(x)
 
-def EightTrigrams_(cfg):
 
+def EightTrigrams_(cfg):
     loss_cfg = deepcopy(cfg)
     name = loss_cfg.pop('name')
 
@@ -64,6 +88,7 @@ def EightTrigrams_(cfg):
     else:
         raise NotImplementedError(name)
 
+
 # import torchviz
 # from graphviz import Source
 
@@ -72,10 +97,9 @@ model = EightTrigrams(640, 32).to("cuda")
 
 # dot = torchviz.make_dot(model(x))
 
-x =  model(x)
+x = model(x)
 # 将可视化图输出为图像文件
 # dot.render("new.pdf")
 # print("start")
 # for o in x:
 #     print(o.shape)
-

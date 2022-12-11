@@ -25,7 +25,7 @@ def norm_layer(cfg, num_features, postfix=''):
     """
     # assert isinstance(cfg, dict) or isinstance() and 'type' in cfg
     cfg_ = cfg.copy()
-
+    print("start")
     layer_type = cfg_.pop('type')
     if layer_type not in norm_cfg:
         raise KeyError('Unrecognized norm type {}'.format(layer_type))
@@ -36,7 +36,7 @@ def norm_layer(cfg, num_features, postfix=''):
 
     assert isinstance(postfix, (int, str))
     name = abbr + str(postfix)
-
+    print("mid")
     requires_grad = cfg_.pop('requires_grad', True)
     cfg_.setdefault('eps', 1e-5)
     if layer_type != 'GN':
@@ -46,7 +46,7 @@ def norm_layer(cfg, num_features, postfix=''):
     else:
         assert 'num_groups' in cfg_
         layer = norm_layer(num_channels=num_features, **cfg_)
-
+    print("end")
     for param in layer.parameters():
         param.requires_grad = requires_grad
 

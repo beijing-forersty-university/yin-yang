@@ -92,7 +92,7 @@ class ConvModule(nn.Module):
                 norm_channels = out_channels
             else:
                 norm_channels = in_channels
-            print(norm_cfg, norm_channels)
+
             self.norm_name, norm = norm_layer(norm_cfg, norm_channels)
             self.add_module(self.norm_name, norm)
 

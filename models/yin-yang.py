@@ -6,9 +6,8 @@ import numpy as np
 from detects import build_detect
 from losses import build_loss
 from necks import build_neck
-from head import  FCOSHead_
+from head import FCOSHead_
 from models import EightTrigrams_
-
 
 """
     FCOS: Fully Convolutional One-Stage Object Detection
@@ -42,7 +41,6 @@ class FCOS(nn.Module):
     def setup_extra_params(self):
         self.model_cfg.HEAD.__setitem__('num_classes', self.num_classes)
 
-
     def init_weights(self):
         for m in self.modules():
             t = type(m)
@@ -55,23 +53,23 @@ class FCOS(nn.Module):
             elif t in [nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU]:
                 m.inplace = False
 
-    def train(self,mode=True):
+    def train(self, mode=True):
         '''
         set module training mode, and frozen bn
         '''
         super().train(mode=True)
+
         def freeze_bn(module):
-            if isinstance(module,nn.BatchNorm2d):
+            if isinstance(module, nn.BatchNorm2d):
                 module.eval()
             classname = module.__class__.__name__
             if classname.find('BatchNorm') != -1:
-                for p in module.parameters(): p.requires_grad=False
+                for p in module.parameters(): p.requires_grad = False
 
         self.apply(freeze_bn)
         print("INFO===>success frozen BN")
         self.backbone.freeze_stages(1)
         print("INFO===>success frozen backbone stage1")
-
 
     def trans_specific_format(self, imgs, targets):
         new_boxes = []
@@ -81,7 +79,7 @@ class FCOS(nn.Module):
         new_heights = []
         new_widths = []
 
-        batch_size=len(imgs)
+        batch_size = len(imgs)
         h_list = [int(img.shape[1]) for img in imgs]
         w_list = [int(img.shape[2]) for img in imgs]
         num_list = [int(target['labels'].shape[0]) for target in targets]
@@ -108,7 +106,6 @@ class FCOS(nn.Module):
         t_targets["height"] = new_heights
         t_targets["width"] = new_widths
         return imgs, t_targets
-
 
     def forward(self, imgs, targets=None, mode='infer', **kwargs):
         threshold = 0.05
@@ -140,7 +137,6 @@ class FCOS(nn.Module):
                 for i, (width, height, scale, pad, pred_box, pred_label, pred_score) in enumerate(
                         zip(targets['width'], targets['height'], targets['scales'], targets['pads'],
                             pred_boxes, pred_labels, pred_scores)):
-
                     scale = scale.cpu().numpy()
                     pad = pad.cpu().numpy()
                     width = width.cpu().numpy()
@@ -158,7 +154,8 @@ class FCOS(nn.Module):
                     bboxes_np[:, [1, 3]] = bboxes_np[:, [1, 3]].clip(0, height)
 
                     keep = pred_score > threshold
-                    outputs.append({"boxes": torch.tensor(bboxes_np)[keep], "labels": pred_label[keep], "scores": pred_score[keep]})
+                    outputs.append({"boxes": torch.tensor(bboxes_np)[keep], "labels": pred_label[keep],
+                                    "scores": pred_score[keep]})
                 return losses, outputs
             else:
                 return losses

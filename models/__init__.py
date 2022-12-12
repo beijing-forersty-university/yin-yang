@@ -123,12 +123,12 @@ def EightTrigrams_(cfg):
 # import torchviz
 # from graphviz import Source
 
-x = torch.randn(32, 3, 640, 640).to("cuda")
-model = EightTrigrams(640, 32).to("cuda")
-
+x = torch.randn(32, 3, 640, 640)
+model = EightTrigrams(640, 32)
+print(model.modules())
 # dot = torchviz.make_dot(model(x))
 
-x = model(x)
+# x = model(x)
 # 将可视化图输出为图像文件
 # dot.render("new.pdf")
 # print("start")

@@ -19,7 +19,7 @@ class ModelEMA:
 
         # print(model)
         self.ema = deepcopy(model).eval()
-        print(self.ema.parameters())
+        print(self.ema)
         self.updates = updates
         self.decay = lambda x: decay * (1 - math.exp(-x / 2000))
         for param in self.ema.parameters():

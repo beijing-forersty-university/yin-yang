@@ -42,7 +42,7 @@ class YOLOv7Loss(nn.Module):
         # input: [batch, anchor, h, w, ch]
         for i in range(self.nl):
             prediction = inputs[i].view(
-                inputs[i].size(0), self.na, self.ch, inputs[i].size(2), inputs[i].size(3)
+                inputs[i].size(0), self.na, self.ch, inputs[i].size(1), inputs[i].size(2)
             ).permute(0, 1, 3, 4, 2).contiguous()
             inputs[i] = prediction
 

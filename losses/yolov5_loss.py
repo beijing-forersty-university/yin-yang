@@ -219,13 +219,13 @@ class YOLOv5Loss:
 
     def build_targets(self, p, targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
-        print(targets.shape)
+
         num_anchors, nt = self.num_anchors, targets.shape[0]  # number of anchors, targets
         tcls, tbox, indices, anch = [], [], [], []
         gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
         ai = torch.arange(num_anchors, device=targets.device).float().view(num_anchors, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
         targets = torch.cat((targets.repeat(num_anchors, 1, 1), ai[:, :, None]), 2)  # append anchor indices
-
+        print(targets.shape)
         g = 0.5  # bias
         off = torch.tensor([[0, 0],
                             [1, 0], [0, 1], [-1, 0], [0, -1],  # j,k,l,m

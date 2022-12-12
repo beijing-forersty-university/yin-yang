@@ -6,7 +6,7 @@
 
 from copy import deepcopy
 
-from fcos_loss import FCOSLoss
+from losses.fcos_loss import FCOSLoss
 
 
 __all__ = ['FCOSLoss']

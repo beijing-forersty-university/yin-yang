@@ -9,7 +9,7 @@ from detects import build_detect
 from losses import build_loss
 
 from head import  YOLOXHead_
-from models import EightTrigrams, EightTrigrams_
+from models import EightTrigrams_
 
 """
     YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors
@@ -251,7 +251,8 @@ class YOLOv7(nn.Module):
             out, train_out = self.detect(self.head(self.backbone(imgs)))
             # print(out, train_out)
             if train_out is not None:
-                losses['loss'], loss_states = self.loss(train_out, targets["gts"], imgs)
+                # losses['loss'], loss_states = self.loss(imgs, targets["gts"], train_out)
+                losses['loss'], loss_states = self.loss(imgs, targets["gts"])
 
                 losses['box_loss'] = loss_states[0]
                 losses['obj_loss'] = loss_states[1]

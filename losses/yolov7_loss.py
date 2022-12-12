@@ -23,6 +23,7 @@ class YOLOLoss(nn.Module):
         #   52x52的特征层对应的anchor是[12, 16],[19, 36],[40, 28]
         # -----------------------------------------------------------#
         self.anchors = np.array(anchors).reshape(-1, 2)
+        print(self.anchors)
         self.anchors = [anchors[mask] for mask in anchors_mask]
         self.num_classes = num_classes
         self.input_shape = input_shape

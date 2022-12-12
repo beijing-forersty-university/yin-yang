@@ -6,19 +6,18 @@
 
 from copy import deepcopy
 
+from fcos_loss import FCOSLoss
 
-# from losses.yolov7_loss import YOLOLoss
-from losses.yolovp_loss import YolopLoss
 
-__all__ = ['YolopLoss']
+__all__ = ['FCOSLoss']
 
 
 def build_loss(cfg):
     loss_cfg = deepcopy(cfg)
     name = loss_cfg.pop('name')
 
-    if name == 'YOLOv7Loss':
-        return YolopLoss(**loss_cfg)
+    if name == 'FCOSLoss':
+        return FCOSLoss(**loss_cfg)
 
     else:
         raise NotImplementedError(name)

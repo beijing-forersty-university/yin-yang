@@ -1,45 +1,89 @@
+import math
 from copy import deepcopy
 
 import torch
 import torch.nn as nn
-from models.modules.yolov7_modules import RepConv, Conv
+import torch.nn.functional as F
 
 
-class YOLOv7Head(nn.Module):
-    def __init__(self, in_channels=[128, 256, 512], out_channels=[256, 512, 1024], depth_mul=1.0, width_mul=1.0):
-        super(YOLOv7Head, self).__init__()
-        in_channels = list(map(lambda x: int(x * width_mul), in_channels))
-        out_channels = list(map(lambda x: int(x * width_mul), out_channels))
-
-        self.conv1 = RepConv(in_channels[0], out_channels[0])
-        self.conv2 = RepConv(in_channels[1], out_channels[1])
-        self.conv3 = RepConv(in_channels[2], out_channels[2])
-
-        self.init_weight()
-
-    def init_weight(self):
-        for m in self.modules():
-            t = type(m)
-            if t is nn.Conv2d:
-                pass  # nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif t is nn.BatchNorm2d:
-                m.eps = 1e-3
-                m.momentum = 0.03
-            elif t in [nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6]:
-                m.inplace = True
+class ScaleExp(nn.Module):
+    def __init__(self, init_value=1.0):
+        super(ScaleExp, self).__init__()
+        self.scale = nn.Parameter(torch.tensor([init_value], dtype=torch.float32))
 
     def forward(self, x):
-        x1, x2, x3 = x
-        x1 = self.conv1(x1)
-        x2 = self.conv2(x2)
-        x3 = self.conv3(x3)
-        return [x1, x2, x3]
+        return torch.exp(x * self.scale)
 
 
-def YOLOXHead_(cfg):
+class FCOSHead(nn.Module):
+    def __init__(self, num_classes, in_channel, GN=True, cnt_on_reg=True, prior=0.01):
+        '''
+        Args
+        in_channel
+        class_num
+        GN
+        prior
+        '''
+        super(FCOSHead, self).__init__()
+        self.num_classes = num_classes
+        self.prior = prior
+        self.cnt_on_reg = cnt_on_reg
+
+        cls_branch = []
+        reg_branch = []
+
+        for i in range(4):
+            cls_branch.append(nn.Conv2d(in_channel, in_channel, kernel_size=3, padding=1, bias=True))
+            if GN:
+                cls_branch.append(nn.GroupNorm(32, in_channel))
+            cls_branch.append(nn.ReLU(True))
+
+            reg_branch.append(nn.Conv2d(in_channel, in_channel, kernel_size=3, padding=1, bias=True))
+            if GN:
+                reg_branch.append(nn.GroupNorm(32, in_channel))
+            reg_branch.append(nn.ReLU(True))
+
+        self.cls_conv = nn.Sequential(*cls_branch)
+        self.reg_conv = nn.Sequential(*reg_branch)
+
+        self.cls_logits = nn.Conv2d(in_channel, self.num_classes, kernel_size=3, padding=1)
+        self.cnt_logits = nn.Conv2d(in_channel, 1, kernel_size=3, padding=1)
+        self.reg_pred = nn.Conv2d(in_channel, 4, kernel_size=3, padding=1)
+
+        self.apply(self.init_weights)
+
+        nn.init.constant_(self.cls_logits.bias, -math.log((1 - prior) / prior))
+        self.scale_exp = nn.ModuleList([ScaleExp(1.0) for _ in range(5)])
+
+    def init_weights(self, module, std=0.01):
+        if isinstance(module, nn.Conv2d):
+            nn.init.normal_(module.weight, std=std)
+
+            if module.bias is not None:
+                nn.init.constant_(module.bias, 0)
+
+    def forward(self, inputs):
+        '''inputs:[P3~P7]'''
+        cls_logits = []
+        cnt_logits = []
+        reg_preds = []
+        for index, P in enumerate(inputs):
+            cls_conv_out = self.cls_conv(P)
+            reg_conv_out = self.reg_conv(P)
+
+            cls_logits.append(self.cls_logits(cls_conv_out))
+            if not self.cnt_on_reg:
+                cnt_logits.append(self.cnt_logits(cls_conv_out))
+            else:
+                cnt_logits.append(self.cnt_logits(reg_conv_out))
+            reg_preds.append(self.scale_exp[index](self.reg_pred(reg_conv_out)))
+        return cls_logits, cnt_logits, reg_preds
+
+
+def FCOSHead_(cfg):
     head_cfg = deepcopy(cfg)
     name = head_cfg.pop('name')
     if name == 'YOLOv7Head':
-        return YOLOv7Head(**head_cfg)
+        return FCOSHead(**head_cfg)
     else:
         raise NotImplementedError(name)

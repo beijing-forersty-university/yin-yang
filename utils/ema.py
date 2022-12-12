@@ -18,7 +18,7 @@ class ModelEMA:
         # self.ema = deepcopy(model.module if is_parallel(model) else model).eval()  # FP32 EMA
 
         # print(model)
-        self.ema = deepcopy(model).eval()
+        self.ema = model.eval()
         self.updates = updates
         self.decay = lambda x: decay * (1 - math.exp(-x / 2000))
         for param in self.ema.parameters():

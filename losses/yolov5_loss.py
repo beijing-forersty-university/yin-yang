@@ -220,12 +220,35 @@ class YOLOv5Loss:
     def build_targets(self, p, targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
 
-        num_anchors, nt = self.num_anchors, targets.shape[0]  # number of anchors, targets
+        # num_anchors, nt = self.num_anchors, targets.shape[0]  # number of anchors, targets
+        # tcls, tbox, indices, anch = [], [], [], []
+        # gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
+        # ai = torch.arange(num_anchors, device=targets.device).float().view(num_anchors, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
+        # targets = torch.cat((targets.repeat(num_anchors, 1, 1), ai[:, :, None]), 2)  # append anchor indices
+        # # print(targets.shape)
+        # g = 0.5  # bias
+        # off = torch.tensor([[0, 0],
+        #                     [1, 0], [0, 1], [-1, 0], [0, -1],  # j,k,l,m
+        #                     # [1, 1], [1, -1], [-1, 1], [-1, -1],  # jk,jm,lk,lm
+        #                     ], device=targets.device).float() * g  # offsets
+        #
+        # for i in range(self.num_layers):
+        #     anchors = self.anchors[i]
+        #     gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
+        #     # print(gain.shape, targets.shape)
+        #     # Match targets to anchors
+        #     t = targets * gain
+        #     print(anchors.shape)
+        #     if nt:
+        #         # Matches
+        #
+        #         r = t[:, :, 4:6]/ anchors[:, None]  # wh ratio
+        na, nt = self.num_anchors, targets.shape[0]  # number of anchors, targets
         tcls, tbox, indices, anch = [], [], [], []
         gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
-        ai = torch.arange(num_anchors, device=targets.device).float().view(num_anchors, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
-        targets = torch.cat((targets.repeat(num_anchors, 1, 1), ai[:, :, None]), 2)  # append anchor indices
-        # print(targets.shape)
+        ai = torch.arange(na, device=targets.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
+        targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
+
         g = 0.5  # bias
         off = torch.tensor([[0, 0],
                             [1, 0], [0, 1], [-1, 0], [0, -1],  # j,k,l,m
@@ -235,14 +258,12 @@ class YOLOv5Loss:
         for i in range(self.num_layers):
             anchors = self.anchors[i]
             gain[2:6] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
-            # print(gain.shape, targets.shape)
+
             # Match targets to anchors
             t = targets * gain
-            print(anchors.shape)
             if nt:
                 # Matches
-
-                r = t[:, :, 4:6]/ anchors[:, None]  # wh ratio
+                r = t[:, :, 4:6] / anchors[:, None]  # wh ratio
                 j = torch.max(r, 1. / r).max(2)[0] < self.hyp_anchor_t  # compare
                 # j = wh_iou(anchors, t[:, 4:6]) > model.hyp['iou_t']  # iou(3,n)=wh_iou(anchors(3,2), gwh(n,2))
                 t = t[j]  # filter

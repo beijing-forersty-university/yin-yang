@@ -9,12 +9,14 @@ from detects.fcos_detect import FCOSDetect
 from detects.objectbox_detect import ObjectBoxDetect
 from detects.yolov5_detect import YOLOv5Detect
 from detects.yolov7_detect import YOLOv7Detect
+from detects.yolov6_detect import YOLOv6Detect
 
 __all__ = [
     'FCOSDetect',
     'YOLOv5Detect',
     'YOLOv7Detect',
-    'ObjectBoxDetect'
+    'ObjectBoxDetect',
+    'YOLOv6Detect'
 ]
 
 
@@ -26,6 +28,8 @@ def build_detect(cfg):
         return FCOSDetect(**detect_cfg)
     elif name == 'YOLOv5Detect':
         return YOLOv5Detect(**detect_cfg)
+    elif name == 'YOLOv6Detect':
+        return YOLOv6Detect(**detect_cfg)
     elif name == 'YOLOv7Detect':
         return YOLOv7Detect(**detect_cfg)
     elif name == 'ObjectBoxDetect':

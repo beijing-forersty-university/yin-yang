@@ -83,7 +83,7 @@ class FCOSHead(nn.Module):
 def FCOSHead_(cfg):
     head_cfg = deepcopy(cfg)
     name = head_cfg.pop('name')
-    if name == 'YOLOv7Head':
+    if name == 'FCOSHead':
         return FCOSHead(**head_cfg)
     else:
         raise NotImplementedError(name)

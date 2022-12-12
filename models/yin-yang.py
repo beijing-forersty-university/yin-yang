@@ -251,8 +251,7 @@ class YOLOv7(nn.Module):
             out, train_out = self.detect(self.head(self.backbone(imgs)))
             # print(out, train_out)
             if train_out is not None:
-                # losses['loss'], loss_states = self.loss(imgs, targets["gts"], train_out)
-                losses['loss'], loss_states = self.loss(imgs, targets["gts"])
+                losses['loss'], loss_states = self.loss(train_out, targets["gts"])
 
                 losses['box_loss'] = loss_states[0]
                 losses['obj_loss'] = loss_states[1]

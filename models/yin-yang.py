@@ -67,9 +67,9 @@ class FCOS(nn.Module):
                 for p in module.parameters(): p.requires_grad = False
 
         self.apply(freeze_bn)
-        print("INFO===>success frozen BN")
-        self.backbone.freeze_stages(1)
-        print("INFO===>success frozen backbone stage1")
+        print("INFO===>success frozen channel")
+        self.backbone.freeze_stages()
+        print("INFO===>success frozen backbone channel")
 
     def trans_specific_format(self, imgs, targets):
         new_boxes = []

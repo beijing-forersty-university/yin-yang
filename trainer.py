@@ -282,8 +282,8 @@ class Trainer:
         print(model_ft)
 
         # EMA
-        # if cfg.EMA:
-        #     self.ema = ModelEMA(model_ft) if cfg.local_rank == 0 else None
+        if cfg.EMA:
+            self.ema = ModelEMA(model_ft) if cfg.local_rank == 0 else None
 
         # Scale learning rate based on global batch size
         if cfg.SCALE_LR:

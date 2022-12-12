@@ -37,7 +37,7 @@ class YOLOv7Loss(nn.Module):
 
     def __call__(self, inputs, targets):
         # input of inputs: [batch, ch * anchor, h, w]
-        print(inputs.shape)
+        print(inputs[0].shape)
         batch_size = targets.shape[0]
         # input: [batch, anchor, h, w, ch]
         for i in range(self.nl):

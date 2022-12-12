@@ -123,11 +123,11 @@ def EightTrigrams_(cfg):
 # import torchviz
 # from graphviz import Source
 
-x = torch.randn(32, 3, 640, 640)
-model = EightTrigrams(640, 32)
-model.eval()
-print([params for params in model.parameters()])
-# dot = torchviz.make_dot(model(x))
+# x = torch.randn(32, 3, 640, 640)
+# model = EightTrigrams(640, 32)
+# model.eval()
+# print([params for params in model.parameters()])
+# # dot = torchviz.make_dot(model(x))
 
 # x = model(x)
 # 将可视化图输出为图像文件

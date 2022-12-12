@@ -5,7 +5,7 @@ import numpy as np
 
 from detects import build_detect
 from losses import build_loss
-
+from necks import build_neck
 from head import  FCOSHead_
 from models import EightTrigrams_
 
@@ -29,7 +29,7 @@ class FCOS(nn.Module):
 
         self.setup_extra_params()
         self.backbone = EightTrigrams_(self.model_cfg.BACKBONE).cuda()
-        # self.neck = build_neck(self.model_cfg.NECK)
+        self.neck = build_neck(self.model_cfg.NECK)
         self.head = FCOSHead_(self.model_cfg.HEAD)
         self.detect = build_detect(self.model_cfg.DETECT)
         self.loss = build_loss(self.model_cfg.LOSS)
@@ -118,9 +118,9 @@ class FCOS(nn.Module):
             losses = {}
             imgs, targets = self.trans_specific_format(imgs, targets)
 
-            # C3, C4, C5 = self.backbone(imgs)
-            # all_P = self.neck([C3, C4, C5])
-            cls_logits, cnt_logits, reg_preds = self.head(self.backbone(imgs))
+            C3, C4, C5 = self.backbone(imgs)
+            all_P = self.neck([C3, C4, C5])
+            cls_logits, cnt_logits, reg_preds = self.head(all_P)
             out = [cls_logits, cnt_logits, reg_preds]
             loss_tuple = self.loss(out, targets["boxes"], targets["labels"])
 

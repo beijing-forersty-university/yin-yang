@@ -184,7 +184,6 @@ class YOLOv7(nn.Module):
         self.backbone = EightTrigrams_(self.model_cfg.BACKBONE).cuda()
         self.conf_thres = 0.001  # confidence threshold
         self.iou_thres = 0.6  # NMS IoU threshold
-        self.model =
         self.init_weights()
 
     def init_weights(self):

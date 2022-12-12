@@ -126,7 +126,7 @@ def EightTrigrams_(cfg):
 x = torch.randn(32, 3, 640, 640)
 model = EightTrigrams(640, 32)
 model.eval()
-print(model.parameters())
+print([params for params in model.parameters()])
 # dot = torchviz.make_dot(model(x))
 
 # x = model(x)

@@ -66,7 +66,7 @@ USE_MODEL:
   BACKBONE: { 'name': 'YIN-YANG', 'batch_size': 32, 'image_size': 640 }
   NECK: { 'name': 'FCOSFPN', 'in_channels': [256, 512, 1024], 'out_channels': 256 }
   HEAD: { 'name': 'FCOSHead',  'in_channel': 256, 'GN': True, 'cnt_on_reg': True, 'prior': 0.01 }
-  DETECT: { 'name': 'FCOSDetect' }
+  DETECT: { 'name': 'FCOSDetect', 'score_threshold': 0.05, 'nms_iou_threshold': 0.6, 'max_detection_boxes_num': 1000, 'strides': [ 8, 16, 32, 64, 128 ] }
   LOSS: { 'name': 'FCOSLoss', 'strides': [8, 16, 32, 64, 128], 'limit_range': [[-1, 64], [64, 128], [128, 256], [256, 512], [512, 999999]] }
 
 

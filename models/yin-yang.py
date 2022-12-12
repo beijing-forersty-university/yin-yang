@@ -113,6 +113,7 @@ class FCOS(nn.Module):
             pass
         else:
             losses = {}
+            print(targets)
             imgs, targets = self.trans_specific_format(imgs, targets)
 
             C3, C4, C5 = self.backbone(imgs)

@@ -36,7 +36,6 @@ class YOLOv7Head(nn.Module):
         return [x1, x2, x3]
 
 
-
 def YOLOXHead_(cfg):
     head_cfg = deepcopy(cfg)
     name = head_cfg.pop('name')

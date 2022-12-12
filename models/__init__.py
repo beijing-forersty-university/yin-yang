@@ -102,7 +102,7 @@ class EightTrigrams(nn.Module):
 
         # return  self.conv1(x)
 
-    def _freeze_stages(self):
+    def freeze_stages(self):
         """Freeze stages param and norm stats."""
         self.channel.eval()
         for param in self.channel.parameters():

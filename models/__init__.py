@@ -102,6 +102,12 @@ class EightTrigrams(nn.Module):
 
         # return  self.conv1(x)
 
+    def _freeze_stages(self):
+        """Freeze stages param and norm stats."""
+        self.channel.eval()
+        for param in self.channel.parameters():
+            param.requires_grad = False
+
 
 def EightTrigrams_(cfg):
     loss_cfg = deepcopy(cfg)

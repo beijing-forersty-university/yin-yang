@@ -64,7 +64,7 @@ USE_MODEL:
   CLASS: 'models.yin-yang.FCOS'
   TYPE: 'yolov7x_l'
   BACKBONE: { 'name': 'YIN-YANG', 'batch_size': 32, 'image_size': 640 }
-  NECK: { 'name': 'FCOSFPN', 'in_channels': [512, 1024, 2048], 'out_channels': 256 }
+  NECK: { 'name': 'FCOSFPN', 'in_channels': [256, 512, 1024], 'out_channels': 256 }
   HEAD: { 'name': 'FCOSHead',  'in_channel': 256, 'GN': True, 'cnt_on_reg': True, 'prior': 0.01 }
   DETECT: { 'name': 'FCOSDetect' }
   LOSS: { 'name': 'FCOSLoss', 'strides': [8, 16, 32, 64, 128], 'limit_range': [[-1, 64], [64, 128], [128, 256], [256, 512], [512, 999999]] }

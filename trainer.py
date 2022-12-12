@@ -279,7 +279,6 @@ class Trainer:
 
         ## parser_model
         model_ft = self._parser_model()
-        print(model_ft)
 
         # EMA
         if cfg.EMA:

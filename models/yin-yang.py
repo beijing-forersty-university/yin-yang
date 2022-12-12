@@ -250,14 +250,19 @@ class YOLOv7(nn.Module):
             losses = {}
             out, train_out = self.detect(self.head(self.backbone(imgs)))
             # print(out, train_out)
-            if train_out is not None:
-                losses['loss'], loss_states = self.loss(train_out, targets["gts"], imgs)
+            # if train_out is not None:
+            #     losses['loss'], loss_states = self.loss(train_out, targets["gts"], imgs)
+            #
+            #     losses['box_loss'] = loss_states[0]
+            #     losses['obj_loss'] = loss_states[1]
+            #     losses['cls_loss'] = loss_states[2]
+            # else:
+            #     losses['loss'] = torch.tensor(0, device=out.device)
 
-                losses['box_loss'] = loss_states[0]
-                losses['obj_loss'] = loss_states[1]
-                losses['cls_loss'] = loss_states[2]
-            else:
-                losses['loss'] = torch.tensor(0, device=out.device)
+            losses['loss'], loss_states = self.loss(train_out, targets["gts"])
+            losses['box_loss'] = loss_states[0]
+            losses['obj_loss'] = loss_states[1]
+            losses['cls_loss'] = loss_states[2]
 
             if mode == 'val':
                 outputs = []

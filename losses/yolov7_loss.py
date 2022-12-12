@@ -138,6 +138,7 @@ class Yolov7Loss:
         self.hyp_obj = 0.7
         self.hyp_cls = 0.3
         self.threshold = 4.0
+        self.na = len(anchors[0])
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0], device=device))

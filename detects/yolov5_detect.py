@@ -33,7 +33,7 @@ class YOLOv5Detect(nn.Module):
         for mi, s in zip(self.m, self.stride):  # from
             b = mi.bias.view(self.num_anchors, -1)  # conv.bias(255) to (3,85)
             b.data[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
-            b.data[:, 5:] += math.log(0.6 / (self.num_classes - 0.9)) if cf is None else torch.log(
+            b.data[:, 5:] += math.log(0.6 / (self.num_classes - 0.999999 + 1)) if cf is None else torch.log(
                 cf / cf.sum())  # cls
             mi.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 

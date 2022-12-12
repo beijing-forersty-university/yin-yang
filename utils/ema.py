@@ -22,7 +22,7 @@ class ModelEMA:
         print(self.ema)
         self.updates = updates
         self.decay = lambda x: decay * (1 - math.exp(-x / 2000))
-        for param in self.ema.parameters():
+        for param in model.parameters():
             param.requires_grad_(False)
 
     def update(self, model):

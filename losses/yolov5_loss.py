@@ -265,7 +265,7 @@ class YOLOv5Loss:
                 # Matches
                 print(t[:, :, 4:6].flatten().shape)
                 r = t[:, :, 4:6].flatten() / anchors[:, None]  # wh ratio
-                j = torch.max(r, 1. / r).max(2)[0] < self.hyp_anchor_t  # compare
+                j = torch.max(r, 1. / r).max(1)[0] < self.hyp_anchor_t  # compare
                 # j = wh_iou(anchors, t[:, 4:6]) > model.hyp['iou_t']  # iou(3,n)=wh_iou(anchors(3,2), gwh(n,2))
                 t = t[j]  # filter
 

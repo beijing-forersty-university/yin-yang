@@ -131,12 +131,13 @@ class Yolov7Loss:
         self.device = device
         self.stride = torch.tensor(stride, device=self.device).view(-1, 1, 1)
         self.anchors = torch.tensor(anchors, device=self.device)
-
+        self.nl = len(stride)
         hyp_fl_gamma = 0.0  # focal loss gamma
         self.hyp_anchor_t = 4.0
         self.hyp_box = 0.05
         self.hyp_obj = 0.7
         self.hyp_cls = 0.3
+        self.threshold = 4.0
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1.0], device=device))
@@ -433,8 +434,8 @@ class Yolov7Loss:
         for i in range(self.nl):
 
             # put anchor and target to feature map
-            anchors = (self.anchors[i] / self.strides[i]).type_as(predictions[i])
-            gain[2:6] = self.strides[i]
+            anchors = (self.anchors[i] / self.stride[i]).type_as(predictions[i])
+            gain[2:6] = self.stride[i]
             target = targets / gain
             gain[2:6] = torch.tensor(predictions[i].shape)[[3, 2, 3, 2]]  # w and h
 

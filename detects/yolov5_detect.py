@@ -10,7 +10,8 @@ import torch.nn as nn
 
 
 class YOLOv5Detect(nn.Module):
-    def __init__(self, num_classes=80, in_channels=[256, 512, 1024], stride=[8., 16., 32.], anchors=(),  depth_mul=1.0, width_mul=1.0):  # detection layer
+    def __init__(self, num_classes=80, in_channels=[256, 512, 1024], stride=[8., 16., 32.], anchors=(), depth_mul=1.0,
+                 width_mul=1.0):  # detection layer
         super().__init__()
         in_channels = list(map(lambda x: int(x * width_mul), in_channels))
 
@@ -32,9 +33,9 @@ class YOLOv5Detect(nn.Module):
         for mi, s in zip(self.m, self.stride):  # from
             b = mi.bias.view(self.num_anchors, -1)  # conv.bias(255) to (3,85)
             b.data[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
-            b.data[:, 5:] += math.log(0.6 / (self.num_classes - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # cls
+            b.data[:, 5:] += math.log(0.6 / (self.num_classes - 0.999999 + 30)) if cf is None else torch.log(
+                cf / cf.sum())  # cls
             mi.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
-
 
     def forward(self, x):
         z = []  # inference output
@@ -56,10 +57,10 @@ class YOLOv5Detect(nn.Module):
 
         return (None, x) if self.training else (torch.cat(z, 1), x)
 
-
     def _make_grid(self, nx=20, ny=20, i=0):
         d = self.anchors[i].device
         yv, xv = torch.meshgrid([torch.arange(ny).to(d), torch.arange(nx).to(d)])
         grid = torch.stack((xv, yv), 2).expand((1, self.num_anchors, ny, nx, 2)).float()
-        anchor_grid = (self.anchors[i].clone() * self.stride[i]).view((1, self.num_anchors, 1, 1, 2)).expand((1, self.num_anchors, ny, nx, 2)).float()
+        anchor_grid = (self.anchors[i].clone() * self.stride[i]).view((1, self.num_anchors, 1, 1, 2)).expand(
+            (1, self.num_anchors, ny, nx, 2)).float()
         return grid, anchor_grid

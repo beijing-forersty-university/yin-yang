@@ -95,8 +95,10 @@ class FCOS(nn.Module):
                 new_scales.append(target['scales'])
             if target.__contains__('pads'):
                 new_pads.append(target['pads'])
-            new_heights.append(target['height'])
-            new_widths.append(target['width'])
+            if target.__contains__('height'):
+                new_heights.append(target['height'])
+            if target.__contains__('width'):
+                new_widths.append(target['width'])
 
         t_targets = {}
         t_targets["boxes"] = torch.stack(new_boxes)
@@ -113,7 +115,6 @@ class FCOS(nn.Module):
             pass
         else:
             losses = {}
-            print(targets)
             imgs, targets = self.trans_specific_format(imgs, targets)
 
             C3, C4, C5 = self.backbone(imgs)

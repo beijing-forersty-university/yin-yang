@@ -66,7 +66,7 @@ USE_MODEL:
   BACKBONE: { 'name': 'YIN-YANG', 'batch_size': 32, 'image_size': 640 }
   HEAD: { 'name': 'YOLOv7Head',  'in_channels': [128, 256, 512]}
   DETECT: { 'name': 'YOLOv7Detect', 'in_channels': [256, 512, 1024] }
-  LOSS: { 'name': 'YOLOv7Loss'}
+  LOSS: { 'name': 'YOLOv7Loss', strides: [8,16,32]}
 
 
 

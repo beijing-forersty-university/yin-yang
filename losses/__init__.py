@@ -8,9 +8,9 @@ from copy import deepcopy
 
 # from losses.yolov7_loss import Yolov7Loss
 
-from losses.yolov7_loss import Yolov7Loss
+from losses.yolov7_loss import YOLOLoss
 
-__all__ = ['Yolov7Loss']
+__all__ = ['YOLOLoss']
 
 
 def build_loss(cfg):
@@ -18,7 +18,7 @@ def build_loss(cfg):
     name = loss_cfg.pop('name')
 
     if name == 'YOLOv7Loss':
-        return Yolov7Loss(**loss_cfg)
+        return YOLOLoss(**loss_cfg)
 
     else:
         raise NotImplementedError(name)

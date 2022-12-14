@@ -1,0 +1,140 @@
+from copy import deepcopy
+
+from mmdet.models import BACKBONES
+
+from models.yang import *
+from models.yin import UNet
+import torch
+from torch import nn
+
+
+class Blocks(nn.Module):
+    def __init__(self, image_size, batch_size, trigram):
+        super().__init__()
+        self.bo = nn.Sequential()
+        for i in trigram:
+            if i == 0:
+                self.yin = Bo(in_channels=3, out_channels=3, image_size=image_size, batch_size=batch_size)
+                self.bo.add_module("yin" + str(i), self.yin)
+            elif i == 1:
+                self.yang = UNet(n_channels=3)
+                self.bo.add_module("yang" + str(i), self.yang)
+            else:
+                raise Exception("您出现在了宇宙边缘，黑洞即将吞噬！！！")
+
+    def forward(self, x):
+        return self.bo(x)
+
+
+class ChannelWisePooling(nn.Module):
+    def __init__(self, pool_type='avg'):
+        super(ChannelWisePooling, self).__init__()
+        self.pool_type = pool_type
+
+    def forward(self, x):
+        # Get the number of channels in the input tensor
+        num_channels = x.shape[1]
+        if self.pool_type == 'avg':
+            # Apply average pooling to each channel independently
+            channels = [F.avg_pool2d(x[:, i, :, :].unsqueeze(1), kernel_size=2) for i in range(num_channels)]
+        elif self.pool_type == 'max':
+            # Apply max pooling to each channel independently
+            channels = [F.max_pool2d(x[:, i, :, :].unsqueeze(1), kernel_size=2) for i in range(num_channels)]
+        else:
+            raise ValueError("Invalid pooling type: {}".format(self.pool_type))
+
+        # Concatenate the pooled channels back together into a single tensor
+        return torch.cat(channels, dim=1)
+
+
+class Neck(nn.Module):
+    def __init__(self, num_channels, out_channel):
+        super(Neck, self).__init__()
+        a = out_channel // 4
+        b = out_channel // 2
+
+        self.conv1 = nn.Conv2d(num_channels, a, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv2d(a, b, kernel_size=3, stride=2)
+        self.conv3 = nn.Conv2d(b, out_channel, kernel_size=3, stride=2)
+        self.gap = nn.AdaptiveAvgPool2d(output_size=(1, 1))
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.gap(x)
+        return x
+
+
+@BACKBONES.register_module()
+class EightTrigrams(nn.Module):
+    def __init__(self, image_size, batch_size):
+        super().__init__()
+        # self.qian = Blocks(image_size, batch_size, [1, 1, 1])
+        # self.dui = Blocks(image_size, batch_size, [1, 1, 0])
+        # self.li = Blocks(image_size, batch_size, [1, 0, 1])
+        # self.zhen = Blocks(image_size, batch_size, [1, 0, 0])
+        # self.xun = Blocks(image_size, batch_size, [0, 1, 1])
+        # self.kan = Blocks(image_size, batch_size, [0, 1, 0])
+        self.gen = Blocks(image_size, batch_size, [0, 0, 1])
+        # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
+        self.channel = ChannelWisePooling()
+        self.neck1 = Neck(3, 256)
+        self.neck2 = Neck(3, 512)
+        self.neck3 = Neck(3, 1024)
+
+    def forward(self, x):
+        # x = self.qian(x)
+        x = self.gen(x)
+        outputs = []
+        # # x = self.li(x)
+        # # x = self.zhen(x)
+        # # x = self.xun(x)
+        # # x = self.kan(x)
+        # # x = self.gen(x)
+        # # x = self.kun(x)
+
+        x = self.channel(x)
+        x1 = self.neck1(x)
+        print(x1.shape)
+        x2 = self.neck2(x)
+        x3 = self.neck3(x)
+
+        return torch.cat(x1, x2, x3)
+
+        # return  self.conv1(x)
+
+    # def training_step(self, batch, batch_idx):
+    #     # training_step defines the train loop. It is independent of forward
+    #     x, y = batch
+    #     # print(x.shape)
+    #     x = self.gen(x)
+    #     x = self.channel(x)
+    #     x1 = self.neck1(x)
+    #     x2 = self.neck2(x)
+    #     x3 = self.neck3(x)
+    #     z = torch.cat(x1, x2, x3)
+    #     loss = F.mse_loss(z, x)
+    #     self.log("train_loss", loss)
+    #     return loss
+    #
+    # def configure_optimizers(self):
+    #     optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+    #     return optimizer
+
+# import torchviz
+# from graphviz import Source
+
+x = torch.randn(32, 3, 640, 640)
+model = EightTrigrams(640, 32)
+# model.eval()
+# print([params for params in model.parameters()])
+# # dot = torchviz.make_dot(model(x))
+
+x = model(x)
+print(x)
+# 将可视化图输出为图像文件
+# dot.render("new.pdf")
+# print("start")
+# for o in x:
+#     print(o.shape)

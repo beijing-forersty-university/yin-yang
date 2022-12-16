@@ -1,37 +1,37 @@
-import mmcv
-from mmdet.datasets import build_dataset
-from mmdet.models import build_detector
-from mmdet.apis import train_detector
-from configs import cfg
-import os.path as osp
-from datasets import FlowerDataset
-from mmdet.apis import inference_detector, show_result_pyplot
+import torch
+import torchvision
+from pytorch_lightning import Trainer
+from datasets import train_test_loader
 
-# Build dataset
-datasets = [build_dataset(cfg.data.train)]
+from models import EightTrigrams
 
-# Build the detector
-model = build_detector(cfg.model)
-# Add an attribute for visualization convenience
-model.CLASSES = datasets[0].CLASSES
+# 2 classes; Only target class or background
+num_classes = 2
+num_epochs = 10
+model = EightTrigrams(640, 12, num_classes)
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+# print(device)
+# move model to the right device
+model.to(device)
 
-# Create work_dir
-mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
-train_detector(model, datasets, cfg, distributed=False, validate=True)
+# parameters
+params = [p for p in model.parameters() if p.requires_grad]
+optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 
-# from mmcv.utils import collect_env as collect_base_env
-# from mmcv.utils import get_git_hash
-#
-# import mmdet
-#
-#
-# def collect_env():
-#     """Collect the information of the running environments."""
-#     env_info = collect_base_env()
-#     env_info['MMDetection'] = mmdet.__version__ + '+' + get_git_hash()[:7]
-#     return env_info
-#
-#
-# if __name__ == '__main__':
-#     for name, val in collect_env().items():
-#         print(f'{name}: {val}')
+
+def get_transform():
+    custom_transforms = [torchvision.transforms.ToTensor(), torchvision.transforms.Normalize((0.432, 0.432, 0.374), (0.275, 0.273, 0.268))]
+    return torchvision.transforms.Compose(custom_transforms)
+
+
+train_data_dir = 'data/flower/train'
+train_coco = 'data/flower/train/_annotations.coco.json'
+train_loader = train_test_loader(train_data_dir, train_coco, get_transform())
+
+train_data_dir = 'data/flower/test'
+train_coco = 'data/flower/test/_annotations.coco.json'
+test_loader = train_test_loader(train_data_dir, train_coco, get_transform())
+
+if __name__ == "__main__":
+    trainer = Trainer(accelerator='gpu', devices=1, limit_train_batches=100, max_epochs=1000)
+    trainer.fit(model, train_loader, test_loader)

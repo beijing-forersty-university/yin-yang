@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functools import partial
 from models.convs import ConvModule
-
+import pytorch_lightning as pl
 
 """
     Learning to Resize Images for Computer Vision Tasks
@@ -23,7 +23,7 @@ def conv7x7(in_chs, out_chs=16):
     return nn.Conv2d(in_chs, out_chs, kernel_size=7, stride=1, padding=3)
 
 
-class ResBlock(nn.Module):
+class ResBlock(pl.LightningModule):
     def __init__(self, in_chs, out_chs=16):
         super(ResBlock, self).__init__()
         self.layers = nn.Sequential(
@@ -41,7 +41,7 @@ class ResBlock(nn.Module):
         return out
 
 
-class Resizer(nn.Module):
+class Resizer(pl.LightningModule):
     def __init__(self, in_chs, out_size, n_filters=16, n_res_blocks=1, mode='bilinear'):
         super(Resizer, self).__init__()
         self.interpolate_layer = partial(F.interpolate, size=out_size, mode=mode,
@@ -73,7 +73,7 @@ class Resizer(nn.Module):
         return out
 
 
-class EfficientAttention(nn.Module):
+class EfficientAttention(pl.LightningModule):
 
     def __init__(self, in_channels, key_channels=2, head_count=2, value_channels=None):
         super().__init__()
@@ -125,7 +125,7 @@ class EfficientAttention(nn.Module):
         return attention
 
 
-class MLP(nn.Module):
+class MLP(pl.LightningModule):
     def __init__(self,
                  in_dim,
                  hidden_dim=None,
@@ -149,7 +149,22 @@ class MLP(nn.Module):
         return x
 
 
-class TransformerEncoder(nn.Module):
+class MLP2(nn.Module):
+    """ Very simple multi-layer perceptron (also called FFN)"""
+
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+        super().__init__()
+        self.num_layers = num_layers
+        h = [hidden_dim] * (num_layers - 1)
+        self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+
+    def forward(self, x):
+        for i, layer in enumerate(self.layers):
+            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+        return x
+
+
+class TransformerEncoder(pl.LightningModule):
     """
     Encoder layer of transformer
     :param dim: feature dimension
@@ -180,7 +195,7 @@ class TransformerEncoder(nn.Module):
         return x
 
 
-class TransformerBlock(nn.Module):
+class TransformerBlock(pl.LightningModule):
     """
     Block of transformer encoder layers. Used in vision task.
     :param in_channels: input channels
@@ -221,7 +236,7 @@ class TransformerBlock(nn.Module):
         return x
 
 
-class Bo(nn.Module):
+class Bo(pl.LightningModule):
     def __init__(self, in_channels, out_channels, image_size, batch_size):
         super().__init__()
         self.resizer = Resizer(in_channels, image_size)
@@ -234,13 +249,14 @@ class Bo(nn.Module):
         # x = self.transformer(x)
         return x
 
-# if __name__ == "__main__":
-#     input = torch.randn(4, 3, 224, 224)
-#     model = Resizer(3, 224)
-#     model1 = EfficientAttention(3, 1, 1, 64)
-#     model2 = TransformerBlock(3, 3, 1, 1)
-#     x = model(input)
-#     x = model1(x)
-#     x = model2(x)
-#
-#     print(x.shape)
+
+if __name__ == "__main__":
+    input = torch.randn(4, 3, 224, 224)
+    model = Resizer(3, 224)
+    model1 = EfficientAttention(3, 1, 1, 64)
+    model2 = TransformerBlock(3, 3, 1, 1)
+    x = model(input)
+    x = model1(x)
+    x = model2(x)
+
+    print(x.shape)

@@ -53,12 +53,13 @@ def compute_mean_and_std(dataset):
     return mean, std
 
 
-path = "../data/flower"
-val_data = torchvision.datasets.ImageFolder(root=path)
+if __name__ == '__main__':
+    path = "../data/flower"
+    val_data = torchvision.datasets.ImageFolder(root=path)
 
-time_start = time()
-val_mean, val_std = compute_mean_and_std(val_data.imgs)
-time_end = time()
-print("计算消耗时间：", round(time_end - time_start, 4), "s")
-print("数据集的平均值：{}".format(val_mean))
-print("数据集的方差：{}".format(val_std))
+    time_start = time()
+    val_mean, val_std = compute_mean_and_std(val_data.imgs)
+    time_end = time()
+    print("计算消耗时间：", round(time_end - time_start, 4), "s")
+    print("数据集的平均值：{}".format(val_mean))
+    print("数据集的方差：{}".format(val_std))

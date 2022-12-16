@@ -1,3 +1,4 @@
+import pylab as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,9 +6,10 @@ import numpy as np
 import warnings
 from models.init_weights import kaiming_init, normal_init, xavier_init, constant_init
 from models.norms import norm_layer
+import pytorch_lightning as pl
 
 
-class ConvModule(nn.Module):
+class ConvModule(pl.LightningModule):
     """A conv block that contains conv/norm/activation layers.
     Args:
         in_channels (int): Same as nn.Conv2d.

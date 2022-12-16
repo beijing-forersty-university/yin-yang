@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pytorch_lightning as pl
 
 
-class DoubleConv(nn.Module):
+class DoubleConv(pl.LightningModule):
     """(convolution => [BN] => ReLU) * 2"""
 
     def __init__(self, in_channels, out_channels, mid_channels=None):
@@ -23,7 +24,7 @@ class DoubleConv(nn.Module):
         return self.double_conv(x)
 
 
-class Down(nn.Module):
+class Down(pl.LightningModule):
     """Downscaling with maxpool then double conv"""
 
     def __init__(self, in_channels, out_channels):
@@ -37,7 +38,7 @@ class Down(nn.Module):
         return self.maxpool_conv(x)
 
 
-class Up(nn.Module):
+class Up(pl.LightningModule):
     """Upscaling then double conv"""
 
     def __init__(self, in_channels, out_channels, bilinear=True):
@@ -66,7 +67,7 @@ class Up(nn.Module):
         return self.conv(x)
 
 
-class OutConv(nn.Module):
+class OutConv(pl.LightningModule):
     def __init__(self, in_channels, out_channels):
         super(OutConv, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
@@ -75,7 +76,7 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-class UNet(nn.Module):
+class UNet(pl.LightningModule):
     def __init__(self, n_channels, bilinear=False):
         super(UNet, self).__init__()
         self.n_channels = n_channels

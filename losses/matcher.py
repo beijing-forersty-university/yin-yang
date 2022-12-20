@@ -74,7 +74,7 @@ class HungarianMatcher(pl.LightningModule):
         C = C.view(bs, num_queries, -1).cpu()
 
         sizes = [len(v["boxes"]) for v in targets]
-        print(len(C.split(sizes, -1)))
+        print(C.split(sizes, -1))
         indices = [linear_sum_assignment(c[i]) for i, c in enumerate(C.split(sizes, -1))]
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 

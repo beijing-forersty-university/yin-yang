@@ -6,7 +6,7 @@ from datasets import train_test_loader
 from models import EightTrigrams
 
 # 2 classes; Only target class or background
-num_classes = 2
+num_classes = 4
 num_epochs = 10
 model = EightTrigrams(640, 12, num_classes)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')

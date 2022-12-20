@@ -95,7 +95,8 @@ class EightTrigrams(pl.LightningModule):
         for i in range(dec_layers - 1):
             aux_weight_dict.update({k + f'_{i}': v for k, v in weight_dict.items()})
         weight_dict.update(aux_weight_dict)
-        self.loss = SetCriterion(num_classes,matcher=build_matcher(), weight_dict= weight_dict, eos_coef=0.1, losses=['labels', 'boxes', 'cardinality'])
+        self.loss = SetCriterion(num_classes, matcher=build_matcher(), weight_dict=weight_dict, eos_coef=0.1,
+                                 losses=['labels', 'boxes', 'cardinality'])
 
     def forward(self, x):
         # x = self.qian(x)
@@ -146,28 +147,9 @@ class EightTrigrams(pl.LightningModule):
 
         return {'loss': loss, 'log': losses, 'progress_bar': losses}
 
-
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = optim.Adam(self.parameters())
         return optimizer
-
-    # def training_step(self, batch, batch_idx):
-    #     # training_step defines the train loop. It is independent of forward
-    #     x, y = batch
-    #     # print(x.shape)
-    #     x = self.gen(x)
-    #     x = self.channel(x)
-    #     x1 = self.neck1(x)
-    #     x2 = self.neck2(x)
-    #     x3 = self.neck3(x)
-    #     z = torch.cat(x1, x2, x3)
-    #     loss = F.mse_loss(z, x)
-    #     self.log("train_loss", loss)
-    #     return loss
-    #
-    # def configure_optimizers(self):
-    #     optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-    #     return optimizer
 
 
 if __name__ == '__main__':

@@ -29,10 +29,12 @@ class Neck(pl.LightningModule):
         x = self.gap(x)
         return x
 
+a = torch.zeros([10, 4])
+print(a.shape)
 
 
-neck = Neck(3, 256).to(device)
-print(neck(x).shape)
+# neck = Neck(3, 256).to(device)
+# print(neck(x).shape)
 # m = nn.MaxPool2d((1, 1), stride=(2, 2))
 # print(m(x).shape)
 # print(backbone(x))

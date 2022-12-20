@@ -33,5 +33,5 @@ train_coco = 'data/flower/test/_annotations.coco.json'
 test_loader = train_test_loader(train_data_dir, train_coco, get_transform())
 
 if __name__ == "__main__":
-    trainer = Trainer(accelerator='gpu', devices=1, limit_train_batches=100, max_epochs=1000)
+    trainer = Trainer(accelerator='gpu', devices=1, limit_train_batches=100, max_epochs=1000, auto_lr_find=True)
     trainer.fit(model, train_loader, test_loader)

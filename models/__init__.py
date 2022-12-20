@@ -16,6 +16,10 @@ from models.head import DyHead
 from torch.utils.data import DataLoader
 
 
+def collate_fn(batch):
+    return tuple(zip(*batch))
+
+
 class Blocks(pl.LightningModule):
     def __init__(self, image_size, batch_size, trigram):
         super().__init__()
@@ -130,7 +134,7 @@ class EightTrigrams(pl.LightningModule):
                                  torchvision.transforms.Normalize((0.432, 0.432, 0.374), (0.275, 0.273, 0.268))]
             return torchvision.transforms.Compose(custom_transforms)
 
-        collate_fn = Collater()
+        # collate_fn = Collater()
 
         my_dataset = FlowerDataset(root=train_data_dir,
                                    annotation=train_coco,
@@ -175,7 +179,7 @@ class EightTrigrams(pl.LightningModule):
         return {'loss': loss, 'log': losses, 'progress_bar': losses}
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01)
+        optimizer = optim.AdamW(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01)
         return optimizer
 
 

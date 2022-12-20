@@ -1,3 +1,7 @@
+import torchvision
+
+from datasets import FlowerDataset
+from datasets.collater import Collater
 from losses import SetCriterion
 from losses.matcher import build_matcher
 from models.yang import *
@@ -9,6 +13,7 @@ import pytorch_lightning as pl
 from models.head.concat_feature_maps import concat_feature_maps
 from collections import OrderedDict
 from models.head import DyHead
+from torch.utils.data import DataLoader
 
 
 class Blocks(pl.LightningModule):
@@ -72,6 +77,7 @@ class Neck(pl.LightningModule):
 class EightTrigrams(pl.LightningModule):
     def __init__(self, image_size, batch_size, num_classes):
         super().__init__()
+        self.batch_size = batch_size
         # self.qian = Blocks(image_size, batch_size, [1, 1, 1])
         # self.dui = Blocks(image_size, batch_size, [1, 1, 0])
         # self.li = Blocks(image_size, batch_size, [1, 0, 1])
@@ -115,6 +121,27 @@ class EightTrigrams(pl.LightningModule):
 
         return x
 
+    def train_dataloader(self):
+        train_data_dir = 'data/flower/train'
+        train_coco = 'data/flower/train/_annotations.coco.json'
+
+        def get_transform():
+            custom_transforms = [torchvision.transforms.ToTensor(),
+                                 torchvision.transforms.Normalize((0.432, 0.432, 0.374), (0.275, 0.273, 0.268))]
+            return torchvision.transforms.Compose(custom_transforms)
+
+        collate_fn = Collater()
+
+        my_dataset = FlowerDataset(root=train_data_dir,
+                                   annotation=train_coco,
+                                   transforms=get_transform()
+                                   )
+        return DataLoader(my_dataset,
+                          batch_size=self.batch_size,
+                          shuffle=True,
+                          num_workers=4,
+                          collate_fn=collate_fn)
+
     def training_step(self, batch, batch_idx):
         # training_step defines the train loop.
         # it is independent of forward
@@ -148,7 +175,7 @@ class EightTrigrams(pl.LightningModule):
         return {'loss': loss, 'log': losses, 'progress_bar': losses}
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters())
+        optimizer = optim.AdamW(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01)
         return optimizer
 
 

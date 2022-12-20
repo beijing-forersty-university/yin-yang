@@ -7,16 +7,10 @@ from models import EightTrigrams
 
 # 2 classes; Only target class or background
 num_classes = 4
-num_epochs = 10
-model = EightTrigrams(640, 12, num_classes)
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-# print(device)
-# move model to the right device
-model.to(device)
-
-# parameters
-params = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
+batch_size = 64
+# # parameters
+# params = [p for p in model.parameters() if p.requires_grad]
+# optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 
 
 def get_transform():
@@ -34,4 +28,12 @@ test_loader = train_test_loader(train_data_dir, train_coco, get_transform())
 
 if __name__ == "__main__":
     trainer = Trainer(accelerator='gpu', devices=1, limit_train_batches=100, max_epochs=1000, auto_lr_find=True)
-    trainer.fit(model, train_loader, test_loader)
+    model = EightTrigrams(640, batch_size, num_classes)
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    # print(device)
+    # move model to the right device
+
+    model.to(device)
+    model.hparams.lr = 0.001
+    trainer.tune(model)
+    # trainer.fit(model)

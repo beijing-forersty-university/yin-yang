@@ -179,7 +179,7 @@ class EightTrigrams(pl.LightningModule):
         return {'loss': loss, 'log': losses, 'progress_bar': losses}
 
     def configure_optimizers(self):
-        optimizer = optim.AdamW(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01)
+        optimizer = optim.Adam(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01)
         return optimizer
 
 

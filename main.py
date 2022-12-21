@@ -35,5 +35,5 @@ if __name__ == "__main__":
 
     model.to(device)
     model.hparams.lr = 0.001
-    trainer.tune(model)
-    # trainer.fit(model)
+    # trainer.tune(model)
+    trainer.fit(model)

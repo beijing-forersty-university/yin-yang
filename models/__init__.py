@@ -152,7 +152,6 @@ class EightTrigrams(pl.LightningModule):
         # coverage_weights = prop_weights * batch_size
         img, ann = batch
         x = torch.stack(img)
-        ann = torch.stack(ann)
         x = self.forward(x)
         d = OrderedDict()
         d["0"] = self.neck(x)

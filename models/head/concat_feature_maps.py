@@ -2,10 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import pytorch_lightning as pl
 
 
-class concat_feature_maps(pl.LightningModule):
+class concat_feature_maps(nn.Module):
     def __init__(self):
         super(concat_feature_maps, self).__init__()
 

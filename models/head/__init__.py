@@ -1,10 +1,9 @@
 import torch.nn as nn
 from models.head.attention_layers import Scale_Aware_Layer, Spatial_Aware_Layer, Task_Aware_Layer
 from collections import OrderedDict
-import pytorch_lightning as pl
 
 
-class DyHead_Block(pl.LightningModule):
+class DyHead_Block(nn.Module):
     def __init__(self, L, S, C):
         super(DyHead_Block, self).__init__()
         # Saving all dimension sizes of F

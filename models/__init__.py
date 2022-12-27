@@ -1,14 +1,11 @@
-import torchvision
+import math
 
-from datasets import FlowerDataset
-from datasets.collater import Collater
-from losses import SetCriterion
-from losses.matcher import build_matcher
+from losses.fcos import FCOSLoss
+from losses.postprocessor import FCOSPostprocessor
 from models.yang import *
 from models.yin import UNet
 import torch
 from torch import nn, optim
-import pytorch_lightning as pl
 
 from models.head.concat_feature_maps import concat_feature_maps
 from collections import OrderedDict
@@ -20,7 +17,80 @@ def collate_fn(batch):
     return tuple(zip(*batch))
 
 
-class Blocks(pl.LightningModule):
+class Scale(nn.Module):
+    def __init__(self, init=1.0):
+        super().__init__()
+
+        self.scale = nn.Parameter(torch.tensor([init], dtype=torch.float32))
+
+    def forward(self, input):
+        return input * self.scale
+
+
+def init_conv_std(module, std=0.01):
+    if isinstance(module, nn.Conv2d):
+        nn.init.normal_(module.weight, std=std)
+
+        if module.bias is not None:
+            nn.init.constant_(module.bias, 0)
+
+
+class FCOSHead(nn.Module):
+    def __init__(self, in_channel, n_class, n_conv, prior):
+        super().__init__()
+
+        n_class = n_class - 1
+
+        cls_tower = []
+        bbox_tower = []
+
+        for i in range(n_conv):
+            cls_tower.append(
+                nn.Conv2d(in_channel, in_channel, 3, padding=1, bias=False)
+            )
+            cls_tower.append(nn.GroupNorm(32, in_channel))
+            cls_tower.append(nn.ReLU())
+
+            bbox_tower.append(
+                nn.Conv2d(in_channel, in_channel, 3, padding=1, bias=False)
+            )
+            bbox_tower.append(nn.GroupNorm(32, in_channel))
+            bbox_tower.append(nn.ReLU())
+
+        self.cls_tower = nn.Sequential(*cls_tower)
+        self.bbox_tower = nn.Sequential(*bbox_tower)
+
+        self.cls_pred = nn.Conv2d(in_channel, n_class, 3, padding=1)
+        self.bbox_pred = nn.Conv2d(in_channel, 4, 3, padding=1)
+        self.center_pred = nn.Conv2d(in_channel, 1, 3, padding=1)
+
+        self.apply(init_conv_std)
+
+        prior_bias = -math.log((1 - prior) / prior)
+        nn.init.constant_(self.cls_pred.bias, prior_bias)
+
+        self.scales = nn.ModuleList([Scale(1.0) for _ in range(5)])
+
+    def forward(self, input):
+        logits = []
+        bboxes = []
+        centers = []
+
+        for feat, scale in zip(input, self.scales):
+            cls_out = self.cls_tower(feat)
+
+            logits.append(self.cls_pred(cls_out))
+            centers.append(self.center_pred(cls_out))
+
+            bbox_out = self.bbox_tower(feat)
+            bbox_out = torch.exp(scale(self.bbox_pred(bbox_out)))
+
+            bboxes.append(bbox_out)
+
+        return logits, bboxes, centers
+
+
+class Blocks(nn.Module):
     def __init__(self, image_size, batch_size, trigram):
         super().__init__()
         self.bo = nn.Sequential()
@@ -38,7 +108,7 @@ class Blocks(pl.LightningModule):
         return self.bo(x)
 
 
-class ChannelWisePooling(pl.LightningModule):
+class ChannelWisePooling(nn.Module):
     def __init__(self, pool_type='avg'):
         super(ChannelWisePooling, self).__init__()
         self.pool_type = pool_type
@@ -59,7 +129,7 @@ class ChannelWisePooling(pl.LightningModule):
         return torch.cat(channels, dim=1)
 
 
-class Neck(pl.LightningModule):
+class Neck(nn.Module):
     def __init__(self, num_channels, out_channel, H, W):
         super(Neck, self).__init__()
         a = out_channel // 4
@@ -78,7 +148,7 @@ class Neck(pl.LightningModule):
         return x
 
 
-class EightTrigrams(pl.LightningModule):
+class EightTrigrams(nn.Module):
     def __init__(self, image_size, batch_size, num_classes):
         super().__init__()
         self.batch_size = batch_size
@@ -89,29 +159,42 @@ class EightTrigrams(pl.LightningModule):
         # self.xun = Blocks(image_size, batch_size, [0, 1, 1])
         # self.kan = Blocks(image_size, batch_size, [0, 1, 0])
         self.gen = Blocks(image_size, batch_size, [0, 0, 1])
+        self.yin = Bo(in_channels=3, out_channels=3, image_size=image_size, batch_size=batch_size)
         # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
         self.channel = ChannelWisePooling()
-        self.neck = Neck(3, 256, 56, 56)
-        self.neck1 = Neck(3, 256, 28, 28)
-        self.neck2 = Neck(3, 256, 14, 14)
-        self.neck3 = Neck(3, 256, 7, 7)
-        self.concat_layer = concat_feature_maps()
-        self.pool = nn.MaxPool2d((1, 1), stride=(2, 2))
-        self.class_embed = nn.Linear(256, num_classes + 1)
-        self.bbox_embed = MLP2(256, 256, 4, 3)
-        weight_dict = {'loss_ce': 1, 'loss_bbox': 5, 'loss_giou': 2}
-        dec_layers = 6
-        aux_weight_dict = {}
-        for i in range(dec_layers - 1):
-            aux_weight_dict.update({k + f'_{i}': v for k, v in weight_dict.items()})
-        weight_dict.update(aux_weight_dict)
-        self.loss = SetCriterion(num_classes, matcher=build_matcher(), weight_dict=weight_dict, eos_coef=0.1,
-                                 losses=['labels', 'boxes', 'cardinality'])
+        self.neck0 = Neck(3, 256, 80, 80)
+        self.neck1 = Neck(3, 256, 40, 40)
+        self.neck2 = Neck(3, 256, 20, 20)
+        self.neck3 = Neck(3, 256, 10, 10)
+        self.neck4 = Neck(3, 256, 5, 5)
 
-    def forward(self, x):
+        self.head = FCOSHead(
+            256, num_classes, 4, 0.01
+        )
+        self.postprocessor = FCOSPostprocessor(
+            0.05,
+            1000,
+            0.6,
+            100,
+            0,
+            num_classes,
+        )
+        self.fpn_strides = [8, 16, 32, 64, 128]
+        self.loss = FCOSLoss(
+            [[-1, 64], [64, 128], [128, 256], [256, 512], [512, 100000000]],
+            2.0,
+            0.25,
+            'giou',
+            True,
+            self.fpn_strides,
+            1.5,
+        )
+
+    def forward(self, x, targets, image_sizes=None):
         # x = self.qian(x)
+        # x = torch.stack(x)
         x = self.gen(x)
-
+        # x = self.gen(x)
         # # x = self.li(x)
         # # x = self.zhen(x)
         # # x = self.xun(x)
@@ -120,67 +203,60 @@ class EightTrigrams(pl.LightningModule):
         # # x = self.kun(x)
 
         x = self.channel(x)
+        x0 = self.neck0(x)
+        x1 = self.neck1(x)
+        x2 = self.neck2(x)
+        x3 = self.neck3(x)
+        x4 = self.neck4(x)
+        features = [x0, x1, x2, x3, x4]
+        cls_pred, box_pred, center_pred = self.head(features)
+        # print(cls_pred, box_pred, center_pred)
+        location = self.compute_location(features)
 
-        # return torch.cat(x1, x2, x3)
+        if self.training:
+            loss_cls, loss_box, loss_center = self.loss(
+                location, cls_pred, box_pred, center_pred, targets
+            )
+            losses = {
+                'loss_cls': loss_cls,
+                'loss_box': loss_box,
+                'loss_center': loss_center,
+            }
 
-        return x
+            return None, losses
 
-    def train_dataloader(self):
-        train_data_dir = 'data/flower/train'
-        train_coco = 'data/flower/train/_annotations.coco.json'
+        else:
+            boxes = self.postprocessor(
+                location, cls_pred, box_pred, center_pred, image_sizes
+            )
 
-        def get_transform():
-            custom_transforms = [torchvision.transforms.ToTensor(),
-                                 torchvision.transforms.Normalize((0.432, 0.432, 0.374), (0.275, 0.273, 0.268))]
-            return torchvision.transforms.Compose(custom_transforms)
+            return boxes, None
 
-        # collate_fn = Collater()
+    def compute_location(self, features):
+        locations = []
 
-        my_dataset = FlowerDataset(root=train_data_dir,
-                                   annotation=train_coco,
-                                   transforms=get_transform()
-                                   )
-        return DataLoader(my_dataset,
-                          batch_size=self.batch_size,
-                          shuffle=True,
-                          num_workers=4,
-                          collate_fn=collate_fn)
+        for i, feat in enumerate(features):
+            _, _, height, width = feat.shape
+            location_per_level = self.compute_location_per_level(
+                height, width, self.fpn_strides[i], feat.device
+            )
+            locations.append(location_per_level)
 
-    def training_step(self, batch, batch_idx):
-        # training_step defines the train loop.
-        # it is independent of forward
-        # coverage_weights = prop_weights * batch_size
-        img, ann = batch
-        x = torch.stack(img)
-        x = self.forward(x)
-        d = OrderedDict()
-        d["0"] = self.neck(x)
-        d["1"] = self.neck1(x)
-        d["2"] = self.neck2(x)
-        d["3"] = self.neck3(x)
-        d['pool'] = self.pool(self.neck3(x))
-        F = self.concat_layer(d)
-        # print('Shape: {}'.format(F.shape))
-        L, S, C = F.shape[1:]
-        num_blocks = 6  # This is the baseline given in the paper
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        full_head = DyHead(num_blocks, L, S, C).to(device)
-        F = full_head(F)
+        return locations
 
-        outputs_class = self.class_embed(F)
-        outputs_coord = self.bbox_embed(F).sigmoid()
+    def compute_location_per_level(self, height, width, stride, device):
+        shift_x = torch.arange(
+            0, width * stride, step=stride, dtype=torch.float32, device=device
+        )
+        shift_y = torch.arange(
+            0, height * stride, step=stride, dtype=torch.float32, device=device
+        )
+        shift_y, shift_x = torch.meshgrid(shift_y, shift_x)
+        shift_x = shift_x.reshape(-1)
+        shift_y = shift_y.reshape(-1)
+        location = torch.stack((shift_x, shift_y), 1) + stride // 2
 
-        out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
-        losses = self.loss(out, ann)
-
-        self.log("train_loss", losses)
-        loss = sum(loss for loss in losses.values())
-
-        return {'loss': loss, 'log': losses, 'progress_bar': losses}
-
-    def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01)
-        return optimizer
+        return location
 
 
 if __name__ == '__main__':

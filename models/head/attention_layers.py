@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.ops import DeformConv2d
-import pytorch_lightning as pl
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-class Scale_Aware_Layer(pl.LightningModule):
+class Scale_Aware_Layer(nn.Module):
     # Constructor
     def __init__(self, s_size):
         super(Scale_Aware_Layer, self).__init__()
@@ -48,7 +48,7 @@ class Scale_Aware_Layer(pl.LightningModule):
         return pi_L * F
 
 
-class Spatial_Aware_Layer(pl.LightningModule):
+class Spatial_Aware_Layer(nn.Module):
     # Constructor
     def __init__(self, L_size, kernel_height=3, kernel_width=3, padding=1, stride=1, dilation=1, groups=1):
         super(Spatial_Aware_Layer, self).__init__()
@@ -93,7 +93,7 @@ class Spatial_Aware_Layer(pl.LightningModule):
 
 
 # DyReLUA technique from Dynamic ReLU paper
-class DyReLUA(pl.LightningModule):
+class DyReLUA(nn.Module):
     def __init__(self, channels, reduction=8, k=2, lambdas=None, init_values=None):
         super(DyReLUA, self).__init__()
 
@@ -143,7 +143,7 @@ class DyReLUA(pl.LightningModule):
         return output
 
 
-class Task_Aware_Layer(pl.LightningModule):
+class Task_Aware_Layer(nn.Module):
     # Defining constructor
     def __init__(self, num_channels):
         super(Task_Aware_Layer, self).__init__()

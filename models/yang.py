@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functools import partial
 from models.convs import ConvModule
-import pytorch_lightning as pl
 
 """
     Learning to Resize Images for Computer Vision Tasks
@@ -23,7 +22,7 @@ def conv7x7(in_chs, out_chs=16):
     return nn.Conv2d(in_chs, out_chs, kernel_size=7, stride=1, padding=3)
 
 
-class ResBlock(pl.LightningModule):
+class ResBlock(nn.Module):
     def __init__(self, in_chs, out_chs=16):
         super(ResBlock, self).__init__()
         self.layers = nn.Sequential(
@@ -41,7 +40,7 @@ class ResBlock(pl.LightningModule):
         return out
 
 
-class Resizer(pl.LightningModule):
+class Resizer(nn.Module):
     def __init__(self, in_chs, out_size, n_filters=16, n_res_blocks=1, mode='bilinear'):
         super(Resizer, self).__init__()
         self.interpolate_layer = partial(F.interpolate, size=out_size, mode=mode,
@@ -73,7 +72,7 @@ class Resizer(pl.LightningModule):
         return out
 
 
-class EfficientAttention(pl.LightningModule):
+class EfficientAttention(nn.Module):
 
     def __init__(self, in_channels, key_channels=2, head_count=2, value_channels=None):
         super().__init__()
@@ -125,7 +124,7 @@ class EfficientAttention(pl.LightningModule):
         return attention
 
 
-class MLP(pl.LightningModule):
+class MLP(nn.Module):
     def __init__(self,
                  in_dim,
                  hidden_dim=None,
@@ -164,7 +163,7 @@ class MLP2(nn.Module):
         return x
 
 
-class TransformerEncoder(pl.LightningModule):
+class TransformerEncoder(nn.Module):
     """
     Encoder layer of transformer
     :param dim: feature dimension
@@ -195,7 +194,7 @@ class TransformerEncoder(pl.LightningModule):
         return x
 
 
-class TransformerBlock(pl.LightningModule):
+class TransformerBlock(nn.Module):
     """
     Block of transformer encoder layers. Used in vision task.
     :param in_channels: input channels
@@ -236,7 +235,7 @@ class TransformerBlock(pl.LightningModule):
         return x
 
 
-class Bo(pl.LightningModule):
+class Bo(nn.Module):
     def __init__(self, in_channels, out_channels, image_size, batch_size):
         super().__init__()
         self.resizer = Resizer(in_channels, image_size)

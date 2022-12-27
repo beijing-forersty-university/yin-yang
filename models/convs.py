@@ -6,10 +6,9 @@ import numpy as np
 import warnings
 from models.init_weights import kaiming_init, normal_init, xavier_init, constant_init
 from models.norms import norm_layer
-import pytorch_lightning as pl
 
 
-class ConvModule(pl.LightningModule):
+class ConvModule(nn.Module):
     """A conv block that contains conv/norm/activation layers.
     Args:
         in_channels (int): Same as nn.Conv2d.

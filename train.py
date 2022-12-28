@@ -149,7 +149,7 @@ if __name__ == '__main__':
     #                             )
     train_dataset = COCODataset(train_data_dir, train_coco, "train", preset_transform(train=True))
     val_dataset = COCODataset(test_data_dir, test_coco, "train", preset_transform(train=True))
-    batch_size = 2
+    batch_size = 8
     epoch = 1000
     num_classes = 4
     img_size = 640
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     optimizer = optim.SGD(
         model.parameters(),
-        lr=0.0001,
+        lr=0.1,
         momentum=0.9,
         weight_decay=0.0001,
         nesterov=True,

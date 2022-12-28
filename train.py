@@ -246,7 +246,7 @@ if __name__ == '__main__':
 
     optimizer = optim.SGD(
         model.parameters(),
-        lr=0.01,
+        lr=0.0001,
         momentum=0.9,
         weight_decay=0.0001,
         nesterov=True,

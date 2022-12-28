@@ -189,6 +189,7 @@ class EightTrigrams(nn.Module):
             self.fpn_strides,
             1.5,
         )
+
     def train(self, mode=True):
         super().train(mode)
 
@@ -197,6 +198,7 @@ class EightTrigrams(nn.Module):
                 module.eval()
 
         self.apply(freeze_bn)
+
     def forward(self, x, targets, image_sizes=None):
         # x = self.qian(x)
         # x = torch.stack(x)
@@ -238,8 +240,6 @@ class EightTrigrams(nn.Module):
             )
 
             return boxes, None
-
-
 
     def compute_location(self, features):
         locations = []

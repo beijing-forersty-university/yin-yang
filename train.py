@@ -146,12 +146,13 @@ if __name__ == '__main__':
     model = EightTrigrams(img_size, batch_size, num_classes)
     model = model.to(device)
 
-    optimizer = optim.SGD(
+    optimizer = optim.Adamax(
         model.parameters(),
-        lr=0.01,
-        momentum=0.9,
-        weight_decay=0.0001,
-        nesterov=True,
+        lr=0.002,
+        betas=(0.9, 0.999),
+        eps=1e-08,
+        weight_decay=0
+
     )
     scheduler = optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=[16, 22], gamma=0.1

@@ -54,11 +54,7 @@ def valid(loader, dataset, model, device):
         images = images.to(device)
         targets = [target.to(device) for target in targets]
 
-        pred, loss_dict = model(images.tensors, targets, image_sizes= images.sizes)
-
-        loss_cls = loss_dict['loss_cls'].mean()
-        loss_box = loss_dict['loss_box'].mean()
-        loss_center = loss_dict['loss_center'].mean()
+        pred, _ = model(images.tensors, targets, image_sizes= images.sizes)
 
         pred = [p.to('cpu') for p in pred]
 
@@ -67,12 +63,6 @@ def valid(loader, dataset, model, device):
     preds = accumulate_predictions(preds)
 
     if get_rank() != 0:
-        pbar.set_description(
-            (
-                f'epoch: {epoch + 1}; cls: {loss_cls:.4f}; '
-                f'box: {loss_box:.4f}; center: {loss_center:.4f}'
-            )
-        )
         return
 
     evaluate(dataset, preds)
@@ -158,7 +148,7 @@ if __name__ == '__main__':
 
     optimizer = optim.SGD(
         model.parameters(),
-        lr=0.1,
+        lr=0.01,
         momentum=0.9,
         weight_decay=0.0001,
         nesterov=True,

@@ -157,7 +157,7 @@ if __name__ == '__main__':
     # )
     optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=1e-3,
+        lr=1e-8,
         betas=(0.9, 0.999),
         weight_decay=5e-2,
         eps=1e-8,
@@ -182,7 +182,10 @@ if __name__ == '__main__':
         max_lr=1e-3,
         steps_per_epoch=len(train_loader),
         epochs=epoch)
-
+    PATH = 'checkpoint/epoch-93.pt'
+    checkpoint = torch.load(PATH)
+    model.load_state_dict(checkpoint['model'])
+    optimizer.load_state_dict(checkpoint['optim'])
     for epoch in range(epoch):
         train(epoch, train_loader, model, optimizer, device)
         valid(valid_loader, val_dataset, model, device)

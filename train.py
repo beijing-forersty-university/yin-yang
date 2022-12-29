@@ -1,4 +1,3 @@
-
 import os
 
 import torch
@@ -8,7 +7,6 @@ from tqdm import tqdm
 
 from distributed import DistributedSampler, get_rank, reduce_loss_dict, all_gather
 from evaluate import evaluate
-
 
 from datasets import COCODataset, collate_fn
 from datasets.tool import preset_transform
@@ -38,8 +36,6 @@ def accumulate_predictions(predictions):
 
 @torch.no_grad()
 def valid(loader, dataset, model, device):
-
-
     torch.cuda.empty_cache()
 
     model.eval()
@@ -54,7 +50,7 @@ def valid(loader, dataset, model, device):
         images = images.to(device)
         targets = [target.to(device) for target in targets]
 
-        pred, _ = model(images.tensors, targets, image_sizes= images.sizes)
+        pred, _ = model(images.tensors, targets, image_sizes=images.sizes)
 
         pred = [p.to('cpu') for p in pred]
 
@@ -139,23 +135,32 @@ if __name__ == '__main__':
     #                             )
     train_dataset = COCODataset(train_data_dir, train_coco, "train", preset_transform(train=True))
     val_dataset = COCODataset(test_data_dir, test_coco, "train", preset_transform(train=True))
-    batch_size = 8
+    batch_size = 2
     epoch = 1000
     num_classes = 4
     img_size = 640
     model = EightTrigrams(img_size, batch_size, num_classes)
     model = model.to(device)
 
-    optimizer = optim.Adamax(
+    # optimizer = optim.Adamax(
+    #     model.parameters(),
+    #     lr=0.002,
+    #     betas=(0.9, 0.999),
+    #     eps=1e-08,
+    #     weight_decay=0
+    #
+    # )
+    # optimizer = optim.RMSprop(model.parameters(), lr=1e-04, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0,
+    #                           centered=False)
+    # scheduler = optim.lr_scheduler.MultiStepLR(
+    #     optimizer, milestones=[16, 22], gamma=0.1
+    # )
+    optimizer = torch.optim.AdamW(
         model.parameters(),
-        lr=0.002,
+        lr=1e-3,
         betas=(0.9, 0.999),
-        eps=1e-08,
-        weight_decay=0
-
-    )
-    scheduler = optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=[16, 22], gamma=0.1
+        weight_decay=5e-2,
+        eps=1e-8,
     )
 
     train_loader = DataLoader(
@@ -172,12 +177,18 @@ if __name__ == '__main__':
         num_workers=0,
         collate_fn=collate_fn(32),
     )
+    lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=1e-3,
+        steps_per_epoch=len(train_loader),
+        epochs=epoch)
 
     for epoch in range(epoch):
         train(epoch, train_loader, model, optimizer, device)
         valid(valid_loader, val_dataset, model, device)
 
-        scheduler.step()
+        lr_scheduler.step()
+        optimizer.zero_grad()
 
         if get_rank() == 0:
             torch.save(

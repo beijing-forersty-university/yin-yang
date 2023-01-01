@@ -73,39 +73,39 @@ class IOULoss(nn.Module):
         self.loc_loss_type = loc_loss_type
 
     def forward(self, out, target, weight=None):
-        pred_left, pred_top, pred_right, pred_bottom = out.unbind(1)
-        target_left, target_top, target_right, target_bottom = target.unbind(1)
+        # pred_left, pred_top, pred_right, pred_bottom = out.unbind(1)
+        # target_left, target_top, target_right, target_bottom = target.unbind(1)
+        #
+        # target_area = (target_left + target_right) * (target_top + target_bottom)
+        # pred_area = (pred_left + pred_right) * (pred_top + pred_bottom)
+        #
+        # w_intersect = torch.min(pred_left, target_left) + torch.min(
+        #     pred_right, target_right
+        # )
+        # h_intersect = torch.min(pred_bottom, target_bottom) + torch.min(
+        #     pred_top, target_top
+        # )
+        #
+        # area_intersect = w_intersect * h_intersect
+        # area_union = target_area + pred_area - area_intersect
+        #
+        # ious = (area_intersect + 1) / (area_union + 1)
 
-        target_area = (target_left + target_right) * (target_top + target_bottom)
-        pred_area = (pred_left + pred_right) * (pred_top + pred_bottom)
-
-        w_intersect = torch.min(pred_left, target_left) + torch.min(
-            pred_right, target_right
-        )
-        h_intersect = torch.min(pred_bottom, target_bottom) + torch.min(
-            pred_top, target_top
-        )
-
-        area_intersect = w_intersect * h_intersect
-        area_union = target_area + pred_area - area_intersect
-
-        ious = (area_intersect + 1) / (area_union + 1)
-
-        if self.loc_loss_type == 'iou':
-            loss = -torch.log(ious)
-
-        elif self.loc_loss_type == 'giou':
-            g_w_intersect = torch.max(pred_left, target_left) + torch.max(
-                pred_right, target_right
-            )
-            g_h_intersect = torch.max(pred_bottom, target_bottom) + torch.max(
-                pred_top, target_top
-            )
-            g_intersect = g_w_intersect * g_h_intersect + 1e-7
-            gious = ious - (g_intersect - area_union) / g_intersect
-
-            loss = 1 - gious
-        elif self.loc_loss_type == 'siou':
+        # if self.loc_loss_type == 'iou':
+        #     loss = -torch.log(ious)
+        #
+        # elif self.loc_loss_type == 'giou':
+        #     g_w_intersect = torch.max(pred_left, target_left) + torch.max(
+        #         pred_right, target_right
+        #     )
+        #     g_h_intersect = torch.max(pred_bottom, target_bottom) + torch.max(
+        #         pred_top, target_top
+        #     )
+        #     g_intersect = g_w_intersect * g_h_intersect + 1e-7
+        #     gious = ious - (g_intersect - area_union) / g_intersect
+        #
+        #     loss = 1 - gious
+        if self.loc_loss_type == 'siou':
             loss = 1 - siou(out, target)
 
         if weight is not None and weight.sum() > 0:

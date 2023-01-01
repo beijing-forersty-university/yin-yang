@@ -184,7 +184,7 @@ class EightTrigrams(nn.Module):
             [[-1, 64], [64, 128], [128, 256], [256, 512], [512, 100000000]],
             2.0,
             0.25,
-            'giou',
+            'siou',
             True,
             self.fpn_strides,
             1.5,

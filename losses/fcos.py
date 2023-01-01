@@ -1,8 +1,69 @@
+import math
+
 import torch
 from torch import nn
 
 
 INF = 100000000
+
+
+def siou(predict_bboxes, gt_bboxes, theta=4, eps=1e-16):
+    predict_bboxes = predict_bboxes
+    gt_bboxes = gt_bboxes
+
+    gt_xmin = gt_bboxes[:, 0] - (gt_bboxes[:, 2] - 1) / 2
+    gt_xmax = gt_bboxes[:, 0] + (gt_bboxes[:, 2] - 1) / 2
+    gt_ymin = gt_bboxes[:, 1] - (gt_bboxes[:, 3] - 1) / 2
+    gt_ymax = gt_bboxes[:, 1] + (gt_bboxes[:, 3] - 1) / 2
+
+    pt_xmin = predict_bboxes[:, 0] - (predict_bboxes[:, 2] - 1) / 2
+    pt_xmax = predict_bboxes[:, 0] + (predict_bboxes[:, 2] - 1) / 2
+    pt_ymin = predict_bboxes[:, 1] - (predict_bboxes[:, 3] - 1) / 2
+    pt_ymax = predict_bboxes[:, 1] + (predict_bboxes[:, 3] - 1) / 2
+    C_w = torch.max(pt_xmax, gt_xmax) - torch.min(pt_xmin, gt_xmin) + 1
+    C_h = torch.max(pt_ymax, gt_ymax) - torch.min(pt_ymin, gt_ymin) + 1
+
+    # 预测框和目标框中心点在水平和垂直方向的距离
+    s_cw = torch.max(predict_bboxes[:, 0], gt_bboxes[:, 0]) - torch.min(predict_bboxes[:, 0],
+                                                                                  gt_bboxes[:, 0])
+    s_ch = torch.max(predict_bboxes[:, 1], gt_bboxes[:, 1]) - torch.min(predict_bboxes[:, 1],
+                                                                                  gt_bboxes[:, 1])
+    sigma = torch.pow(s_cw ** 2 + s_ch ** 2, 0.5)  # 中心点之间的距离
+    sin_alpha_1 = s_ch / (sigma + eps)
+    sin_alpha_2 = s_cw / (sigma + eps)
+    threshold = math.pow(2, 0.5) / 2  # 大于45度，选择beta，小于45度，选择alpha
+    sin_alpha = torch.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
+
+    angle_cost = torch.cos(torch.arcsin(sin_alpha) * 2 - math.pi / 2)  # 角度损失
+
+    rho_w = torch.pow(s_cw / C_w, 2)
+    rho_h = torch.pow(s_ch / C_h, 2)
+    gamma = 2 - angle_cost  # 距离损失的系数，平衡角度和距离
+    distance_cost = (1 - torch.exp(-1 * gamma * rho_w)) + (1 - torch.exp(-1 * gamma * rho_h))  # 距离损失
+
+    omiga_w = torch.abs(predict_bboxes[:, 2] - gt_bboxes[:, 2]) / torch.max(predict_bboxes[:, 2],
+                                                                                      gt_bboxes[:, 2])
+    omiga_h = torch.abs(predict_bboxes[:, 3] - gt_bboxes[:, 3]) / torch.max(predict_bboxes[:, 3],
+                                                                                      gt_bboxes[:, 3])
+    shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), theta) + torch.pow(1 - torch.exp(-1 * omiga_h), theta)
+
+    gt_w, gt_h = (gt_xmax - gt_xmin + 1), (gt_ymax - gt_ymin + 1)
+    pt_w, pt_h = (pt_xmax - pt_xmin + 1), (pt_ymax - pt_ymin + 1)
+
+    inter_xmin, inter_ymin = torch.max(pt_xmin, gt_xmin), torch.max(pt_ymin, gt_ymin)
+    inter_xmax, inter_ymax = torch.min(pt_xmax, gt_xmax), torch.min(pt_ymax, gt_ymax)
+
+    inter_w = (inter_xmax - inter_xmin + 1).clamp(0)
+    inter_h = (inter_ymax - inter_ymin + 1).clamp(0)
+
+    inter_area = inter_w * inter_h
+    union_area = (gt_w * gt_h) + (pt_w * pt_h) - inter_area
+
+    iou = inter_area / (union_area + eps)
+
+    siou = iou - 0.5 * (distance_cost + shape_cost)
+
+    return siou
 
 
 class IOULoss(nn.Module):
@@ -44,6 +105,8 @@ class IOULoss(nn.Module):
             gious = ious - (g_intersect - area_union) / g_intersect
 
             loss = 1 - gious
+        elif self.loc_loss_type == 'siou':
+            loss = 1 - siou(out, target)
 
         if weight is not None and weight.sum() > 0:
             return (loss * weight).sum() / weight.sum()

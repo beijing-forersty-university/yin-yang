@@ -49,13 +49,13 @@ class FCOSHead(nn.Module):
                 nn.Conv2d(in_channel, in_channel, 3, padding=1, bias=False)
             )
             cls_tower.append(nn.GroupNorm(32, in_channel))
-            cls_tower.append(nn.ReLU())
+            cls_tower.append(nn.PReLU())
 
             bbox_tower.append(
                 nn.Conv2d(in_channel, in_channel, 3, padding=1, bias=False)
             )
             bbox_tower.append(nn.GroupNorm(32, in_channel))
-            bbox_tower.append(nn.ReLU())
+            bbox_tower.append(nn.PReLU())
 
         self.cls_tower = nn.Sequential(*cls_tower)
         self.bbox_tower = nn.Sequential(*bbox_tower)
@@ -153,13 +153,12 @@ class EightTrigrams(nn.Module):
         super().__init__()
         self.batch_size = batch_size
         # self.qian = Blocks(image_size, batch_size, [1, 1, 1])
-        # self.dui = Blocks(image_size, batch_size, [1, 1, 0])
+        self.dui = Blocks(image_size, batch_size, [1, 1, 0])
         # self.li = Blocks(image_size, batch_size, [1, 0, 1])
         # self.zhen = Blocks(image_size, batch_size, [1, 0, 0])
         # self.xun = Blocks(image_size, batch_size, [0, 1, 1])
         # self.kan = Blocks(image_size, batch_size, [0, 1, 0])
-        self.gen = Blocks(image_size, batch_size, [0, 0, 1])
-        self.yin = Bo(in_channels=3, out_channels=3, image_size=image_size, batch_size=batch_size)
+        # self.gen = Blocks(image_size, batch_size, [0, 0, 1])
         # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
         self.channel = ChannelWisePooling()
         self.neck0 = Neck(3, 256, 80, 80)
@@ -202,7 +201,7 @@ class EightTrigrams(nn.Module):
     def forward(self, x, targets, image_sizes=None):
         # x = self.qian(x)
         # x = torch.stack(x)
-        x = self.gen(x)
+        x = self.dui(x)
         # x = self.gen(x)
         # # x = self.li(x)
         # # x = self.zhen(x)

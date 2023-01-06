@@ -1,3 +1,4 @@
+import math
 import os
 
 import torch
@@ -155,14 +156,18 @@ if __name__ == '__main__':
     # scheduler = optim.lr_scheduler.MultiStepLR(
     #     optimizer, milestones=[16, 22], gamma=0.1
     # )
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=1e-8,
-        betas=(0.9, 0.999),
-        weight_decay=5e-2,
-        eps=1e-8,
-    )
-
+    # optimizer = torch.optim.AdamW(
+    #     model.parameters(),
+    #     lr=1e-8,
+    #     betas=(0.9, 0.999),
+    #     weight_decay=5e-2,
+    #     eps=1e-8,
+    # )
+    lr_rate = 0.1
+    lambda1 = lambda epoch: (epoch / 4000) if epoch < 4000 else 0.5 * (
+                math.cos((epoch - 4000) / (100 * 1000 - 4000) * math.pi) + 1)
+    optimizer = optim.SGD(model.parameters(), lr=lr_rate, momentum=0.9, nesterov=True)
+    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -177,11 +182,11 @@ if __name__ == '__main__':
         num_workers=0,
         collate_fn=collate_fn(32),
     )
-    lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-        optimizer,
-        max_lr=1e-3,
-        steps_per_epoch=len(train_loader),
-        epochs=epoch)
+    # lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    #     optimizer,
+    #     max_lr=1e-3,
+    #     steps_per_epoch=len(train_loader),
+    #     epochs=epoch)
     PATH = 'checkpoint/epoch-93.pt'
     checkpoint = torch.load(PATH)
     model.load_state_dict(checkpoint['model'])
@@ -190,7 +195,7 @@ if __name__ == '__main__':
         train(epoch, train_loader, model, optimizer, device)
         valid(valid_loader, val_dataset, model, device)
 
-        lr_scheduler.step()
+        scheduler.step()
         optimizer.zero_grad()
 
         if get_rank() == 0:

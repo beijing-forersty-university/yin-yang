@@ -122,11 +122,12 @@ def clip_sigmoid(input):
 
 
 class SigmoidFocalLoss(nn.Module):
-    def __init__(self, gamma, alpha):
+    def __init__(self, gamma, alpha, eps = 1e-16):
         super().__init__()
 
         self.gamma = gamma
         self.alpha = alpha
+        self.eps = eps
 
     def forward(self, out, target):
         n_class = out.shape[1]
@@ -140,8 +141,8 @@ class SigmoidFocalLoss(nn.Module):
         gamma = self.gamma
         alpha = self.alpha
 
-        term1 = (1 - p) ** gamma * torch.log(p)
-        term2 = p ** gamma * torch.log(1 - p)
+        term1 = (1 - p) ** gamma * torch.log(p + self.eps)
+        term2 = p ** gamma * torch.log(1 - p + self.eps)
 
         # print(term1.sum(), term2.sum())
 
@@ -313,7 +314,7 @@ class FCOSLoss(nn.Module):
 
         return torch.sqrt(centerness)
 
-    def forward(self, locations, cls_pred, box_pred, center_pred, targets):
+    def forward(self, locations, cls_pred, box_pred, center_pred, targets, eps=1e-16):
         batch = cls_pred[0].shape[0]
         n_class = cls_pred[0].shape[1]
 
@@ -343,7 +344,7 @@ class FCOSLoss(nn.Module):
 
         pos_id = torch.nonzero(labels_flat > 0).squeeze(1)
 
-        cls_loss = self.cls_loss(cls_flat, labels_flat.int()) / (pos_id.numel() + batch)
+        cls_loss = self.cls_loss(cls_flat, labels_flat.int()) / (pos_id.numel() + batch + eps)
 
         box_flat = box_flat[pos_id]
         center_flat = center_flat[pos_id]

@@ -4,6 +4,7 @@ import os
 import torch
 from torch import nn, autocast
 from torch.cuda.amp import GradScaler
+from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader, sampler
 from tqdm import tqdm
 
@@ -73,8 +74,6 @@ def accumulate_predictions(predictions):
 
 @torch.no_grad()
 def valid(loader, dataset, model, device):
-
-
     torch.cuda.empty_cache()
 
     model.eval()
@@ -182,7 +181,7 @@ if __name__ == '__main__':
     #                             )
     train_dataset = COCODataset(train_data_dir, train_coco, "train", preset_transform(train=True))
     val_dataset = COCODataset(test_data_dir, test_coco, "train", preset_transform(train=True))
-    batch_size = 2
+    batch_size = 4
     epoch = 1000
     num_classes = 4
     img_size = 640
@@ -190,25 +189,11 @@ if __name__ == '__main__':
     model = model.to(device)
 
     lr_rate = 0.1
-
-    # optimizer = optim.Yogi(
-    #     model.parameters(),
-    #     lr=lr_rate,
-    #     betas=(0.9, 0.999),
-    #     eps=1e-8,
-    #     weight_decay=0,
-    # )
-    optimizer = optim.SGDP(
-        model.parameters(),
-        lr=1e-3,
-        momentum=0,
-        dampening=0,
-        weight_decay=1e-2,
-        nesterov=False,
-        delta=0.1,
-        wd_ratio=0.1
-    )
-
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0003, weight_decay=1e-5)  # 这里可以随便换optimizer
+    # 定义一个scheduler 参数自己设置
+    # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=1e-5)
+    # 如果想用带热重启的，可以向下面这样设置
+    scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=10, eta_min=1e-5)
     scaler = GradScaler()
     train_loader = DataLoader(
         train_dataset,
@@ -241,13 +226,13 @@ if __name__ == '__main__':
         torch.autograd.profiler.profile(False)
         torch.autograd.profiler.emit_nvtx(False)
         train(epoch, train_loader, model, optimizer, scaler, device)
-        optimizer.step()
+
         ema.update()
         ema.apply_shadow()
         # evaluate
         valid(valid_loader, val_dataset, model, device)
         ema.restore()
-
+        scheduler.step()
         if get_rank() == 0:
             torch.save(
                 {'model': model.state_dict(), 'optim': optimizer.state_dict()},

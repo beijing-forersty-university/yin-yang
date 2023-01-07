@@ -14,7 +14,7 @@ from evaluate import evaluate
 from datasets import COCODataset, collate_fn
 from datasets.tool import preset_transform
 from models import EightTrigrams
-import torch_optimizer as optim
+
 
 
 class EMA():

@@ -1,5 +1,7 @@
 import math
 
+import torchvision
+
 from losses.fcos import FCOSLoss
 from losses.postprocessor import FCOSPostprocessor
 from models.yang import *
@@ -148,7 +150,6 @@ class Neck(nn.Module):
         return x
 
 
-
 class EightTrigrams(nn.Module):
 
     def __init__(self, image_size, batch_size, num_classes):
@@ -162,6 +163,7 @@ class EightTrigrams(nn.Module):
         # self.kan = Blocks(image_size, batch_size, [0, 1, 0])
         # self.gen = Blocks(image_size, batch_size, [0, 0, 1])
         # self.kun = Blocks(image_size, batch_size, [0, 0, 0])
+
         self.channel = ChannelWisePooling()
         self.neck0 = Neck(3, 256, 80, 80)
         self.neck1 = Neck(3, 256, 40, 40)
@@ -200,11 +202,14 @@ class EightTrigrams(nn.Module):
 
         self.apply(freeze_bn)
 
-
     def forward(self, x, targets, image_sizes=None):
         # x = self.qian(x)
         # x = torch.stack(x)
         x = self.dui(x)
+        if self.training:
+            x = torchvision.ops.drop_block2d(x, 0.05, 3, True, 1e-6, True)
+        else:
+            x = torchvision.ops.drop_block2d(x, 0.05, 3, True, 1e-6, False)
         # x = self.gen(x)
         # # x = self.li(x)
         # # x = self.zhen(x)

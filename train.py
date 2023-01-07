@@ -2,7 +2,7 @@ import math
 import os
 
 import torch
-from torch import nn, optim, autocast
+from torch import nn, autocast
 from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader, sampler
 from tqdm import tqdm
@@ -13,6 +13,41 @@ from evaluate import evaluate
 from datasets import COCODataset, collate_fn
 from datasets.tool import preset_transform
 from models import EightTrigrams
+import torch_optimizer as optim
+
+
+class EMA():
+    def __init__(self, model, decay):
+        self.model = model
+        self.decay = decay
+        self.shadow = {}
+        self.backup = {}
+
+    def register(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                self.shadow[name] = param.data.clone()
+
+    def update(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                assert name in self.shadow
+                new_average = (1.0 - self.decay) * param.data + self.decay * self.shadow[name]
+                self.shadow[name] = new_average.clone()
+
+    def apply_shadow(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                assert name in self.shadow
+                self.backup[name] = param.data
+                param.data = self.shadow[name]
+
+    def restore(self):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                assert name in self.backup
+                param.data = self.backup[name]
+        self.backup = {}
 
 
 def accumulate_predictions(predictions):
@@ -38,6 +73,8 @@ def accumulate_predictions(predictions):
 
 @torch.no_grad()
 def valid(loader, dataset, model, device):
+
+
     torch.cuda.empty_cache()
 
     model.eval()
@@ -84,7 +121,7 @@ def train(epoch, loader, model, optimizer, scaler, device):
         images = images.to(device)
         targets = [target.to(device) for target in targets]
 
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
         with autocast(device_type='cuda', dtype=torch.float16):
             _, loss_dict = model(images.tensors, targets=targets)
             loss_cls = loss_dict['loss_cls'].mean()
@@ -95,7 +132,7 @@ def train(epoch, loader, model, optimizer, scaler, device):
         # loss.backward()
         scaler.scale(loss).backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=20, norm_type=2)
-        # optimizer.step()
+
         scaler.step(optimizer)
         scaler.update()
 
@@ -152,31 +189,26 @@ if __name__ == '__main__':
     model = EightTrigrams(img_size, batch_size, num_classes)
     model = model.to(device)
 
-    # optimizer = optim.Adamax(
-    #     model.parameters(),
-    #     lr=0.002,
-    #     betas=(0.9, 0.999),
-    #     eps=1e-08,
-    #     weight_decay=0
-    #
-    # )
-    # optimizer = optim.RMSprop(model.parameters(), lr=1e-04, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0,
-    #                           centered=False)
-    # scheduler = optim.lr_scheduler.MultiStepLR(
-    #     optimizer, milestones=[16, 22], gamma=0.1
-    # )
-    # optimizer = torch.optim.AdamW(
-    #     model.parameters(),
-    #     lr=1e-8,
-    #     betas=(0.9, 0.999),
-    #     weight_decay=5e-2,
-    #     eps=1e-8,
-    # )
     lr_rate = 0.1
-    lambda1 = lambda epoch: (epoch / 4000) if epoch < 4000 else 0.5 * (
-            math.cos((epoch - 4000) / (100 * 1000 - 4000) * math.pi) + 1)
-    optimizer = optim.SGD(model.parameters(), lr=lr_rate, momentum=0.9, nesterov=True)
-    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+
+    # optimizer = optim.Yogi(
+    #     model.parameters(),
+    #     lr=lr_rate,
+    #     betas=(0.9, 0.999),
+    #     eps=1e-8,
+    #     weight_decay=0,
+    # )
+    optimizer = optim.SGDP(
+        model.parameters(),
+        lr=1e-3,
+        momentum=0,
+        dampening=0,
+        weight_decay=1e-2,
+        nesterov=False,
+        delta=0.1,
+        wd_ratio=0.1
+    )
+
     scaler = GradScaler()
     train_loader = DataLoader(
         train_dataset,
@@ -194,17 +226,14 @@ if __name__ == '__main__':
         collate_fn=collate_fn(32),
         pin_memory=True
     )
-    # lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-    #     optimizer,
-    #     max_lr=1e-3,
-    #     steps_per_epoch=len(train_loader),
-    #     epochs=epoch)
+
     PATH = 'checkpoint/epoch-93.pt'
     # checkpoint = torch.load(PATH)
     # model.load_state_dict(checkpoint['model'])
     # optimizer.load_state_dict(checkpoint['optim'])
     # amp.load_state_dict(checkpoint['amp'])
-
+    ema = EMA(model, 0.999)
+    ema.register()
     for epoch in range(epoch):
         torch.cuda.empty_cache()
         torch.backends.cudnn.benchmark = True
@@ -212,9 +241,12 @@ if __name__ == '__main__':
         torch.autograd.profiler.profile(False)
         torch.autograd.profiler.emit_nvtx(False)
         train(epoch, train_loader, model, optimizer, scaler, device)
+        optimizer.step()
+        ema.update()
+        ema.apply_shadow()
+        # evaluate
         valid(valid_loader, val_dataset, model, device)
-
-        scheduler.step()
+        ema.restore()
 
         if get_rank() == 0:
             torch.save(

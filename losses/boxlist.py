@@ -1,6 +1,7 @@
 import torch
 from torchvision import ops
 
+from utils.soft_nms import soft_nms
 
 FLIP_LEFT_RIGHT = 0
 FLIP_TOP_BOTTOM = 1
@@ -210,8 +211,9 @@ def boxlist_nms(boxlist, scores, threshold, max_proposal=-1):
     mode = boxlist.mode
     boxlist = boxlist.convert('xyxy')
     box = boxlist.box
-    keep = ops.nms(box, scores, threshold)
+    # keep = ops.nms(box, scores, threshold)
 
+    keep = soft_nms(box, scores)
     if max_proposal > 0:
         keep = keep[:max_proposal]
 

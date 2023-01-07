@@ -2,7 +2,8 @@ import math
 import os
 
 import torch
-from torch import nn, optim
+from torch import nn, optim, autocast
+from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader, sampler
 from tqdm import tqdm
 
@@ -65,7 +66,7 @@ def valid(loader, dataset, model, device):
     evaluate(dataset, preds)
 
 
-def train(epoch, loader, model, optimizer, device):
+def train(epoch, loader, model, optimizer, scaler, device):
     model.train()
 
     if get_rank() == 0:
@@ -75,20 +76,28 @@ def train(epoch, loader, model, optimizer, device):
         pbar = loader
 
     for images, targets, _ in pbar:
-        model.zero_grad()
+        # model.zero_grad()
+
+        for param in model.parameters():
+            param.grad = None
 
         images = images.to(device)
         targets = [target.to(device) for target in targets]
 
-        _, loss_dict = model(images.tensors, targets=targets)
-        loss_cls = loss_dict['loss_cls'].mean()
-        loss_box = loss_dict['loss_box'].mean()
-        loss_center = loss_dict['loss_center'].mean()
+        optimizer.zero_grad()
+        with autocast(device_type='cuda', dtype=torch.float16):
+            _, loss_dict = model(images.tensors, targets=targets)
+            loss_cls = loss_dict['loss_cls'].mean()
+            loss_box = loss_dict['loss_box'].mean()
+            loss_center = loss_dict['loss_center'].mean()
 
-        loss = loss_cls + loss_box + loss_center
-        loss.backward()
-        nn.utils.clip_grad_norm_(model.parameters(), 10)
-        optimizer.step()
+            loss = loss_cls + loss_box + loss_center
+        # loss.backward()
+        scaler.scale(loss).backward()
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=20, norm_type=2)
+        # optimizer.step()
+        scaler.step(optimizer)
+        scaler.update()
 
         loss_reduced = reduce_loss_dict(loss_dict)
         loss_cls = loss_reduced['loss_cls'].mean().item()
@@ -165,15 +174,17 @@ if __name__ == '__main__':
     # )
     lr_rate = 0.1
     lambda1 = lambda epoch: (epoch / 4000) if epoch < 4000 else 0.5 * (
-                math.cos((epoch - 4000) / (100 * 1000 - 4000) * math.pi) + 1)
+            math.cos((epoch - 4000) / (100 * 1000 - 4000) * math.pi) + 1)
     optimizer = optim.SGD(model.parameters(), lr=lr_rate, momentum=0.9, nesterov=True)
     scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+    scaler = GradScaler()
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         sampler=data_sampler(train_dataset, shuffle=True, distributed=False),
         num_workers=0,
         collate_fn=collate_fn(32),
+        pin_memory=True
     )
     valid_loader = DataLoader(
         val_dataset,
@@ -181,6 +192,7 @@ if __name__ == '__main__':
         sampler=data_sampler(val_dataset, shuffle=False, distributed=False),
         num_workers=0,
         collate_fn=collate_fn(32),
+        pin_memory=True
     )
     # lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
     #     optimizer,
@@ -188,15 +200,21 @@ if __name__ == '__main__':
     #     steps_per_epoch=len(train_loader),
     #     epochs=epoch)
     PATH = 'checkpoint/epoch-93.pt'
-    checkpoint = torch.load(PATH)
-    model.load_state_dict(checkpoint['model'])
-    optimizer.load_state_dict(checkpoint['optim'])
+    # checkpoint = torch.load(PATH)
+    # model.load_state_dict(checkpoint['model'])
+    # optimizer.load_state_dict(checkpoint['optim'])
+    # amp.load_state_dict(checkpoint['amp'])
+
     for epoch in range(epoch):
-        train(epoch, train_loader, model, optimizer, device)
+        torch.cuda.empty_cache()
+        torch.backends.cudnn.benchmark = True
+        torch.autograd.set_detect_anomaly(False)
+        torch.autograd.profiler.profile(False)
+        torch.autograd.profiler.emit_nvtx(False)
+        train(epoch, train_loader, model, optimizer, scaler, device)
         valid(valid_loader, val_dataset, model, device)
 
         scheduler.step()
-        optimizer.zero_grad()
 
         if get_rank() == 0:
             torch.save(

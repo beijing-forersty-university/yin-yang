@@ -148,7 +148,9 @@ class Neck(nn.Module):
         return x
 
 
+
 class EightTrigrams(nn.Module):
+
     def __init__(self, image_size, batch_size, num_classes):
         super().__init__()
         self.batch_size = batch_size
@@ -197,6 +199,7 @@ class EightTrigrams(nn.Module):
                 module.eval()
 
         self.apply(freeze_bn)
+
 
     def forward(self, x, targets, image_sizes=None):
         # x = self.qian(x)

@@ -1,69 +1,131 @@
 import math
 
+import numpy as np
 import torch
 from torch import nn
-
 
 INF = 100000000
 
 
-def siou(predict_bboxes, gt_bboxes, theta=4, eps=1e-16):
-    predict_bboxes = predict_bboxes
-    gt_bboxes = gt_bboxes
+# def siou(predict_bboxes, gt_bboxes, theta=4, eps=1e-16):
+#     predict_bboxes = predict_bboxes
+#     gt_bboxes = gt_bboxes
+#
+#     gt_xmin = gt_bboxes[:, 0] - (gt_bboxes[:, 2] - 1) / 2
+#     gt_xmax = gt_bboxes[:, 0] + (gt_bboxes[:, 2] - 1) / 2
+#     gt_ymin = gt_bboxes[:, 1] - (gt_bboxes[:, 3] - 1) / 2
+#     gt_ymax = gt_bboxes[:, 1] + (gt_bboxes[:, 3] - 1) / 2
+#
+#     pt_xmin = predict_bboxes[:, 0] - (predict_bboxes[:, 2] - 1) / 2
+#     pt_xmax = predict_bboxes[:, 0] + (predict_bboxes[:, 2] - 1) / 2
+#     pt_ymin = predict_bboxes[:, 1] - (predict_bboxes[:, 3] - 1) / 2
+#     pt_ymax = predict_bboxes[:, 1] + (predict_bboxes[:, 3] - 1) / 2
+#     C_w = torch.max(pt_xmax, gt_xmax) - torch.min(pt_xmin, gt_xmin) + 1
+#     C_h = torch.max(pt_ymax, gt_ymax) - torch.min(pt_ymin, gt_ymin) + 1
+#
+#     # 预测框和目标框中心点在水平和垂直方向的距离
+#     s_cw = torch.max(predict_bboxes[:, 0], gt_bboxes[:, 0]) - torch.min(predict_bboxes[:, 0],
+#                                                                                   gt_bboxes[:, 0])
+#     s_ch = torch.max(predict_bboxes[:, 1], gt_bboxes[:, 1]) - torch.min(predict_bboxes[:, 1],
+#                                                                                   gt_bboxes[:, 1])
+#     sigma = torch.pow(s_cw ** 2 + s_ch ** 2, 0.5)  # 中心点之间的距离
+#     sin_alpha_1 = s_ch / (sigma + eps)
+#     sin_alpha_2 = s_cw / (sigma + eps)
+#     threshold = math.pow(2, 0.5) / 2  # 大于45度，选择beta，小于45度，选择alpha
+#     sin_alpha = torch.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
+#
+#     angle_cost = torch.cos(torch.arcsin(sin_alpha) * 2 - math.pi / 2)  # 角度损失
+#
+#     rho_w = torch.pow(s_cw / C_w, 2)
+#     rho_h = torch.pow(s_ch / C_h, 2)
+#     gamma = 2 - angle_cost  # 距离损失的系数，平衡角度和距离
+#     distance_cost = (1 - torch.exp(-1 * gamma * rho_w)) + (1 - torch.exp(-1 * gamma * rho_h))  # 距离损失
+#
+#     omiga_w = torch.abs(predict_bboxes[:, 2] - gt_bboxes[:, 2]) / torch.max(predict_bboxes[:, 2],
+#                                                                                       gt_bboxes[:, 2])
+#     omiga_h = torch.abs(predict_bboxes[:, 3] - gt_bboxes[:, 3]) / torch.max(predict_bboxes[:, 3],
+#                                                                                       gt_bboxes[:, 3])
+#     shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), theta) + torch.pow(1 - torch.exp(-1 * omiga_h), theta)
+#
+#     gt_w, gt_h = (gt_xmax - gt_xmin + 1), (gt_ymax - gt_ymin + 1)
+#     pt_w, pt_h = (pt_xmax - pt_xmin + 1), (pt_ymax - pt_ymin + 1)
+#
+#     inter_xmin, inter_ymin = torch.max(pt_xmin, gt_xmin), torch.max(pt_ymin, gt_ymin)
+#     inter_xmax, inter_ymax = torch.min(pt_xmax, gt_xmax), torch.min(pt_ymax, gt_ymax)
+#
+#     inter_w = (inter_xmax - inter_xmin + 1).clamp(0)
+#     inter_h = (inter_ymax - inter_ymin + 1).clamp(0)
+#
+#     inter_area = inter_w * inter_h
+#     union_area = (gt_w * gt_h) + (pt_w * pt_h) - inter_area
+#
+#     iou = inter_area / (union_area + eps)
+#
+#     siou = iou - 0.5 * (distance_cost + shape_cost)
+#
+#     return siou
 
-    gt_xmin = gt_bboxes[:, 0] - (gt_bboxes[:, 2] - 1) / 2
-    gt_xmax = gt_bboxes[:, 0] + (gt_bboxes[:, 2] - 1) / 2
-    gt_ymin = gt_bboxes[:, 1] - (gt_bboxes[:, 3] - 1) / 2
-    gt_ymax = gt_bboxes[:, 1] + (gt_bboxes[:, 3] - 1) / 2
+def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, SIoU=False, eps=1e-7):
+    # Returns the IoU of box1 to box2. box1 is 4, box2 is nx4
+    box2 = box2.T
 
-    pt_xmin = predict_bboxes[:, 0] - (predict_bboxes[:, 2] - 1) / 2
-    pt_xmax = predict_bboxes[:, 0] + (predict_bboxes[:, 2] - 1) / 2
-    pt_ymin = predict_bboxes[:, 1] - (predict_bboxes[:, 3] - 1) / 2
-    pt_ymax = predict_bboxes[:, 1] + (predict_bboxes[:, 3] - 1) / 2
-    C_w = torch.max(pt_xmax, gt_xmax) - torch.min(pt_xmin, gt_xmin) + 1
-    C_h = torch.max(pt_ymax, gt_ymax) - torch.min(pt_ymin, gt_ymin) + 1
+    # Get the coordinates of bounding boxes
+    if x1y1x2y2:  # x1, y1, x2, y2 = box1
+        b1_x1, b1_y1, b1_x2, b1_y2 = box1[0], box1[1], box1[2], box1[3]
+        b2_x1, b2_y1, b2_x2, b2_y2 = box2[0], box2[1], box2[2], box2[3]
+    else:  # transform from xywh to xyxy
+        b1_x1, b1_x2 = box1[0] - box1[2] / 2, box1[0] + box1[2] / 2
+        b1_y1, b1_y2 = box1[1] - box1[3] / 2, box1[1] + box1[3] / 2
+        b2_x1, b2_x2 = box2[0] - box2[2] / 2, box2[0] + box2[2] / 2
+        b2_y1, b2_y2 = box2[1] - box2[3] / 2, box2[1] + box2[3] / 2
 
-    # 预测框和目标框中心点在水平和垂直方向的距离
-    s_cw = torch.max(predict_bboxes[:, 0], gt_bboxes[:, 0]) - torch.min(predict_bboxes[:, 0],
-                                                                                  gt_bboxes[:, 0])
-    s_ch = torch.max(predict_bboxes[:, 1], gt_bboxes[:, 1]) - torch.min(predict_bboxes[:, 1],
-                                                                                  gt_bboxes[:, 1])
-    sigma = torch.pow(s_cw ** 2 + s_ch ** 2, 0.5)  # 中心点之间的距离
-    sin_alpha_1 = s_ch / (sigma + eps)
-    sin_alpha_2 = s_cw / (sigma + eps)
-    threshold = math.pow(2, 0.5) / 2  # 大于45度，选择beta，小于45度，选择alpha
-    sin_alpha = torch.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
+    # Intersection area
+    inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * \
+            (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
 
-    angle_cost = torch.cos(torch.arcsin(sin_alpha) * 2 - math.pi / 2)  # 角度损失
+    # Union Area
+    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
+    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
+    union = w1 * h1 + w2 * h2 - inter + eps
 
-    rho_w = torch.pow(s_cw / C_w, 2)
-    rho_h = torch.pow(s_ch / C_h, 2)
-    gamma = 2 - angle_cost  # 距离损失的系数，平衡角度和距离
-    distance_cost = (1 - torch.exp(-1 * gamma * rho_w)) + (1 - torch.exp(-1 * gamma * rho_h))  # 距离损失
-
-    omiga_w = torch.abs(predict_bboxes[:, 2] - gt_bboxes[:, 2]) / torch.max(predict_bboxes[:, 2],
-                                                                                      gt_bboxes[:, 2])
-    omiga_h = torch.abs(predict_bboxes[:, 3] - gt_bboxes[:, 3]) / torch.max(predict_bboxes[:, 3],
-                                                                                      gt_bboxes[:, 3])
-    shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), theta) + torch.pow(1 - torch.exp(-1 * omiga_h), theta)
-
-    gt_w, gt_h = (gt_xmax - gt_xmin + 1), (gt_ymax - gt_ymin + 1)
-    pt_w, pt_h = (pt_xmax - pt_xmin + 1), (pt_ymax - pt_ymin + 1)
-
-    inter_xmin, inter_ymin = torch.max(pt_xmin, gt_xmin), torch.max(pt_ymin, gt_ymin)
-    inter_xmax, inter_ymax = torch.min(pt_xmax, gt_xmax), torch.min(pt_ymax, gt_ymax)
-
-    inter_w = (inter_xmax - inter_xmin + 1).clamp(0)
-    inter_h = (inter_ymax - inter_ymin + 1).clamp(0)
-
-    inter_area = inter_w * inter_h
-    union_area = (gt_w * gt_h) + (pt_w * pt_h) - inter_area
-
-    iou = inter_area / (union_area + eps)
-
-    siou = iou - 0.5 * (distance_cost + shape_cost)
-
-    return siou
+    iou = inter / union
+    if GIoU or DIoU or CIoU or SIoU:
+        cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)  # convex (smallest enclosing box) width
+        ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
+        if SIoU:  # SIoU Loss https://arxiv.org/pdf/2205.12740.pdf
+            s_cw = (b2_x1 + b2_x2 - b1_x1 - b1_x2) * 0.5
+            s_ch = (b2_y1 + b2_y2 - b1_y1 - b1_y2) * 0.5
+            sigma = torch.pow(s_cw ** 2 + s_ch ** 2, 0.5)
+            sin_alpha_1 = torch.abs(s_cw) / sigma
+            sin_alpha_2 = torch.abs(s_ch) / sigma
+            threshold = pow(2, 0.5) / 2
+            sin_alpha = torch.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
+            # angle_cost = 1 - 2 * torch.pow( torch.sin(torch.arcsin(sin_alpha) - np.pi/4), 2)
+            angle_cost = torch.cos(torch.arcsin(sin_alpha) * 2 - np.pi / 2)
+            rho_x = (s_cw / cw) ** 2
+            rho_y = (s_ch / ch) ** 2
+            gamma = angle_cost - 2
+            distance_cost = 2 - torch.exp(gamma * rho_x) - torch.exp(gamma * rho_y)
+            omiga_w = torch.abs(w1 - w2) / torch.max(w1, w2)
+            omiga_h = torch.abs(h1 - h2) / torch.max(h1, h2)
+            shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), 4) + torch.pow(1 - torch.exp(-1 * omiga_h), 4)
+            return iou - 0.5 * (distance_cost + shape_cost)
+        if CIoU or DIoU:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
+            c2 = cw ** 2 + ch ** 2 + eps  # convex diagonal squared
+            rho2 = ((b2_x1 + b2_x2 - b1_x1 - b1_x2) ** 2 +
+                    (b2_y1 + b2_y2 - b1_y1 - b1_y2) ** 2) / 4  # center distance squared
+            if DIoU:
+                return iou - rho2 / c2  # DIoU
+            elif CIoU:  # https://github.com/Zzh-tju/DIoU-SSD-pytorch/blob/master/utils/box/box_utils.py#L47
+                v = (4 / math.pi ** 2) * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
+                with torch.no_grad():
+                    alpha = v / (v - iou + (1 + eps))
+                return iou - (rho2 / c2 + v * alpha)  # CIoU
+        else:  # GIoU https://arxiv.org/pdf/1902.09630.pdf
+            c_area = cw * ch + eps  # convex area
+            return iou - (c_area - union) / c_area  # GIoU
+    else:
+        return iou  # IoU
 
 
 class IOULoss(nn.Module):
@@ -106,7 +168,8 @@ class IOULoss(nn.Module):
         #
         #     loss = 1 - gious
         if self.loc_loss_type == 'siou':
-            loss = 1 - siou(out, target)
+            # loss = 1 - siou(out, target)
+            loss = bbox_iou(out, target, SIoU=True)
 
         if weight is not None and weight.sum() > 0:
             return (loss * weight).sum() / weight.sum()
@@ -122,7 +185,7 @@ def clip_sigmoid(input):
 
 
 class SigmoidFocalLoss(nn.Module):
-    def __init__(self, gamma, alpha, eps = 1e-16):
+    def __init__(self, gamma, alpha, eps=1e-16):
         super().__init__()
 
         self.gamma = gamma
@@ -147,8 +210,8 @@ class SigmoidFocalLoss(nn.Module):
         # print(term1.sum(), term2.sum())
 
         loss = (
-            -(t == class_ids).float() * alpha * term1
-            - ((t != class_ids) * (t >= 0)).float() * (1 - alpha) * term2
+                -(t == class_ids).float() * alpha * term1
+                - ((t != class_ids) * (t >= 0)).float() * (1 - alpha) * term2
         )
 
         return loss.sum()
@@ -156,7 +219,7 @@ class SigmoidFocalLoss(nn.Module):
 
 class FCOSLoss(nn.Module):
     def __init__(
-        self, sizes, gamma, alpha, iou_loss_type, center_sample, fpn_strides, pos_radius
+            self, sizes, gamma, alpha, iou_loss_type, center_sample, fpn_strides, pos_radius
     ):
         super().__init__()
 
@@ -254,7 +317,7 @@ class FCOSLoss(nn.Module):
         return is_in_boxes
 
     def compute_target_for_location(
-        self, locations, targets, sizes_of_interest, n_point_per_level
+            self, locations, targets, sizes_of_interest, n_point_per_level
     ):
         labels = []
         box_targets = []
@@ -285,8 +348,8 @@ class FCOSLoss(nn.Module):
             max_box_targets_per_img = box_targets_per_img.max(2)[0]
 
             is_cared_in_level = (
-                max_box_targets_per_img >= sizes_of_interest[:, [0]]
-            ) & (max_box_targets_per_img <= sizes_of_interest[:, [1]])
+                                        max_box_targets_per_img >= sizes_of_interest[:, [0]]
+                                ) & (max_box_targets_per_img <= sizes_of_interest[:, [1]])
 
             locations_to_gt_area = area[None].repeat(len(locations), 1)
             locations_to_gt_area[is_in_boxes == 0] = INF
@@ -309,7 +372,7 @@ class FCOSLoss(nn.Module):
         left_right = box_targets[:, [0, 2]]
         top_bottom = box_targets[:, [1, 3]]
         centerness = (left_right.min(-1)[0] / left_right.max(-1)[0]) * (
-            top_bottom.min(-1)[0] / top_bottom.max(-1)[0]
+                top_bottom.min(-1)[0] / top_bottom.max(-1)[0]
         )
 
         return torch.sqrt(centerness)

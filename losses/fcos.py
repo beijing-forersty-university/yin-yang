@@ -164,7 +164,7 @@ class FCOSLoss(nn.Module):
 
         self.cls_loss = SigmoidFocalLoss(gamma, alpha)
         self.box_loss = IOULoss(iou_loss_type)
-        self.center_loss = nn.BCEWithLogitsLoss()
+        self.center_loss = nn.SoftMarginLoss()
 
         self.center_sample = center_sample
         self.strides = fpn_strides

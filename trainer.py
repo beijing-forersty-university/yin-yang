@@ -14,7 +14,7 @@ from evaluate import evaluate
 from datasets import COCODataset, collate_fn
 from datasets.tool import preset_transform
 from models import EightTrigrams
-
+from accelerate import Accelerator, find_executable_batch_size
 
 
 class EMA():
@@ -102,7 +102,10 @@ def valid(loader, dataset, model, device):
     evaluate(dataset, preds)
 
 
-def train(epoch, loader, model, optimizer, scaler, device):
+# @find_executable_batch_size(starting_batch_size=16)
+def train(epoch, loader, model, optimizer, accelerator, device):
+    # nonlocal accelerator  # Ensure they can be used in our context
+    # accelerator.free_memory()  # Free all lingering references
     model.train()
 
     if get_rank() == 0:
@@ -112,33 +115,31 @@ def train(epoch, loader, model, optimizer, scaler, device):
         pbar = loader
 
     for images, targets, _ in pbar:
-        # model.zero_grad()
 
         for param in model.parameters():
             param.grad = None
-
-        images = images.to(device)
-        targets = [target.to(device) for target in targets]
-
-        optimizer.zero_grad(set_to_none=True)
-        with autocast(device_type='cuda', dtype=torch.float16):
+        with accelerator.accumulate(model):
+            images = images.to(device)
+            targets = [target.to(device) for target in targets]
+            optimizer.zero_grad(set_to_none=True)
             _, loss_dict = model(images.tensors, targets=targets)
             loss_cls = loss_dict['loss_cls'].mean()
             loss_box = loss_dict['loss_box'].mean()
             loss_center = loss_dict['loss_center'].mean()
 
             loss = loss_cls + loss_box + loss_center
-        # loss.backward()
-        scaler.scale(loss).backward()
-        nn.utils.clip_grad_norm_(model.parameters(), max_norm=20, norm_type=2)
 
-        scaler.step(optimizer)
-        scaler.update()
+            # loss.backward()
+            accelerator.backward(loss)
+            optimizer.step()
 
-        loss_reduced = reduce_loss_dict(loss_dict)
-        loss_cls = loss_reduced['loss_cls'].mean().item()
-        loss_box = loss_reduced['loss_box'].mean().item()
-        loss_center = loss_reduced['loss_center'].mean().item()
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=20, norm_type=2)
+            scheduler.step()
+
+            loss_reduced = reduce_loss_dict(loss_dict)
+            loss_cls = loss_reduced['loss_cls'].mean().item()
+            loss_box = loss_reduced['loss_box'].mean().item()
+            loss_center = loss_reduced['loss_center'].mean().item()
 
         if get_rank() == 0:
             pbar.set_description(
@@ -147,6 +148,7 @@ def train(epoch, loader, model, optimizer, scaler, device):
                     f'box: {loss_box:.4f}; center: {loss_center:.4f}'
                 )
             )
+            accelerator.log({"cls": loss_cls, "box": loss_box, "center": loss_center}, step=epoch)
 
 
 def data_sampler(dataset, shuffle, distributed):
@@ -161,10 +163,8 @@ def data_sampler(dataset, shuffle, distributed):
 
 
 if __name__ == '__main__':
-
-    n_gpu = int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
-
-    device = 'cuda'
+    accelerator = Accelerator(gradient_accumulation_steps=2, log_with="tensorboard", logging_dir="log")
+    device = accelerator.device
 
     train_data_dir = 'data/flower/train'
     train_coco = 'data/flower/train/_annotations.coco.json'
@@ -181,20 +181,28 @@ if __name__ == '__main__':
     #                             )
     train_dataset = COCODataset(train_data_dir, train_coco, "train", preset_transform(train=True))
     val_dataset = COCODataset(test_data_dir, test_coco, "train", preset_transform(train=True))
-    batch_size = 16
-    epoch = 1000
+    batch_size = 2
+    epoch = 100000
     num_classes = 5
     img_size = 640
     model = EightTrigrams(img_size, batch_size, num_classes)
     model = model.to(device)
 
-    lr_rate = 0.1
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0003, weight_decay=1e-5)  # 这里可以随便换optimizer
+    lr_rate = 0.0003
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr_rate, weight_decay=1e-5, eps=1e-3, amsgrad=True)
+    # 这里可以随便换optimizer
+    # optimizer = torch.optim.SGD(model.parameters(), lr=lr_rate, momentum=0.9, weight_decay=1e-4)
     # 定义一个scheduler 参数自己设置
     # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=1e-5)
     # 如果想用带热重启的，可以向下面这样设置
     scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=10, eta_min=1e-5)
-    scaler = GradScaler()
+
+    # Register the LR scheduler
+    accelerator.register_for_checkpointing(scheduler)
+
+    # Save the starting state
+    # accelerator.save_state("checkpoint/")
+    # accelerator.load_state("checkpoint/")
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -212,28 +220,43 @@ if __name__ == '__main__':
         pin_memory=True
     )
 
-    PATH = 'checkpoint/epoch-93.pt'
-    # checkpoint = torch.load(PATH)
-    # model.load_state_dict(checkpoint['model'])
-    # optimizer.load_state_dict(checkpoint['optim'])
-    # amp.load_state_dict(checkpoint['amp'])
-    ema = EMA(model, 0.999)
-    ema.register()
-    for epoch in range(epoch):
-        torch.cuda.empty_cache()
-        torch.backends.cudnn.benchmark = True
-        torch.autograd.set_detect_anomaly(False)
-        torch.autograd.profiler.profile(False)
-        torch.autograd.profiler.emit_nvtx(False)
-        train(epoch, train_loader, model, optimizer, scaler, device)
-        ema.update()
-        ema.apply_shadow()
-        # evaluate
-        valid(valid_loader, val_dataset, model, device)
-        ema.restore()
-        scheduler.step()
-        if get_rank() == 0:
-            torch.save(
-                {'model': model.state_dict(), 'optim': optimizer.state_dict()},
-                f'checkpoint/epoch-{epoch + 1}.pt',
-            )
+    # PATH = 'checkpoint/epoch-93.pt'
+    # accelerator.load_state(PATH)
+
+    # ema = EMA(model, 0.999)
+    # ema.register()
+    config = {
+        "num_iterations": epoch,
+        "learning_rate": lr_rate,
+    }
+    accelerator.init_trackers("./log/", config=config)
+    model, optimizer, training_dataloader, scheduler = accelerator.prepare(
+        model, optimizer, train_loader, scheduler
+    )
+    try:
+        for epoch in range(config["num_iterations"]):
+            torch.backends.cudnn.benchmark = True
+            torch.autograd.set_detect_anomaly(False)
+            torch.autograd.profiler.profile(False)
+            torch.autograd.profiler.emit_nvtx(False)
+            train(epoch, train_loader, model, optimizer, accelerator, device)
+            scheduler.step()
+            # ema.update()
+            # ema.apply_shadow()
+            # evaluate
+
+            # ema.restore()
+            unwrapped_model = accelerator.unwrap_model(model)
+            accelerator.save({
+                "model": unwrapped_model.state_dict(),
+                "optimizer": optimizer.optimizer.state_dict()  # optimizer is an AcceleratedOptimizer object
+            }, "./bundle.pth")
+            print(f"save model at ./bundle.pth")
+            if epoch % 100 == 0:
+                valid(valid_loader, val_dataset, model, device)
+    except KeyboardInterrupt:
+        print("_-------------------------_")
+        print("提前终止")
+        accelerator.end_training()
+
+    accelerator.end_training()

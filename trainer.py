@@ -181,7 +181,7 @@ if __name__ == '__main__':
     #                             )
     train_dataset = COCODataset(train_data_dir, train_coco, "train", preset_transform(train=True))
     val_dataset = COCODataset(test_data_dir, test_coco, "train", preset_transform(train=True))
-    batch_size = 2
+    batch_size = 16
     epoch = 100000
     num_classes = 5
     img_size = 640
